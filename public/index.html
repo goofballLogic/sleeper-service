@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    
+    <title>Hello</title>
+    <link rel="stylesheet" type="text/css" href="/public/css/main.css" />
+    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.1/moment.min.js"></script>
+    <script src="/public/js/util.js"></script>
+    <script src="/public/js/google-drive.js"></script>
+    <script src="/public/js/auth.js"></script>
+    <script src="/public/js/main.js"></script>
+    <script async defer src="//apis.google.com/js/api.js" 
+        onload="this.onload=function(){};handleGAPILoad()" 
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
+    
+</head>
+
+<body>
+    <main>
+        <div id="status-time"></div>
+        <div id="logged-out" class="hidden">
+            <a href="sign-in.html?src=/public/index.html">Sign in</a>
+        </div>
+        <div id="logged-in" class="hidden">
+            <span class="status"></span>
+            <a href="sign-in.html?src=/public/index.html">Sign out</a>
+        </div>
+        <article class="projects">
+            <heading>Projects</heading>
+            <button disabled class="list">List</button>
+            <ul class="results">
+            
+            </ul>
+        </article>
+        <div id="content"></div>
+    </main>
+</body>
+
+</html>

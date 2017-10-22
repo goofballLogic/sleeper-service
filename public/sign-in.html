@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    
+    <title>Sign In</title>
+    <link rel="stylesheet" type="text/css" href="/public/css/main.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.1/moment.min.js"></script>
+    <script src="/public/js/util.js"></script>
+    <script src="/public/js/google-drive.js"></script>
+    <script src="/public/js/auth.js"></script>
+    <script src="/public/js/sign-in.js"></script>
+    <script async defer src="https://apis.google.com/js/api.js" 
+        onload="this.onload=function(){};handleGAPILoad()" 
+        onreadystatechange="if (this.readyState === 'complete') this.onload()">
+    </script>
+    
+</head>
+<body>
+    
+    <article class="logged-out">
+        <button class="gapi-authorize hidden">Authorize access to Google Drive</button>
+    </article>
+    <article class="logged-in">
+        <button class="gapi-signout hidden">Sign out</button>
+    </article>
+    
+</body>
+</html>

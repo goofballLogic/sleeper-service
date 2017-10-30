@@ -15,10 +15,14 @@ function googleDrive() {
     var sheetsAPI = "https://sheets.googleapis.com/v4/spreadsheets";
     var sheetMime = "application/vnd.google-apps.spreadsheet";
     
-    function request( params ) {
+    function request( params, body, method ) {
         
-        var options = { path: filesAPI, params: params };
-        console.log( options );
+        method = method || ( body ? "POST" : "GET" );
+        var path = filesAPI;
+        console.log( method, path, JSON.stringify( params ) );
+        if( body ) { console.log( body ); }
+        var options = { path: path, params: params, method: method, body: body };
+console.log( options );
         return gapi.client.request( options );
         
     }
@@ -35,15 +39,13 @@ function googleDrive() {
         return request( { q: q } );
         
     }
+    function asFileSpec( file ) { return { id: file.id, name: file.name }; }
+    function asFailSpec( code, message, isLogical ) { return { code: code, message: message, isLogical: isLogical }; }
     function resolveList( res ) {
         
         var result = res.result;
         var files = result.files;
-        return Promise.resolve( files.map( function( file ) {
-
-            return { id: file.id, name: file.name };
-            
-        } ) );
+        return Promise.resolve( files.map( asFileSpec ) );
         
     }
     function resolveListSingle( filter, res ) {
@@ -70,47 +72,30 @@ function googleDrive() {
         if ( files && files.length === 1 ) {
             
             var file = files[ 0 ];
-            return Promise.resolve( {
-                
-                id: file.id,
-                name: file.name
-                
-            } );
+            return Promise.resolve( asFileSpec( file ) );
             
         } else {
             
-            return Promise.reject( {
-                
-                code: 404,
-                message: "Not found (or multiple matches)",
-                isLogical: true
-                
-            } );
+            var fail = asFailSpec( 404, "Not found (or multiple matches)", true );
+            return Promise.reject( fail );
             
         }
         
     }
     function rejectOperation( res ) {
         
-        var err = res.result.error;
-        return Promise.reject( {
-                
-            code: err.code,
-            message: err.message
-            
-        } );
+        var fail = asFailSpec( res.result.error );
+        return Promise.reject( fail );
         
     }
     function listFiles( folderSpec ) {
         
-        return listSheets( folderSpec.id )
-            .then( resolveList, rejectOperation );
+        return listSheets( folderSpec.id ).then( resolveList, rejectOperation );
             
     }
     function findFolder( name ) {
     
-        return findItem( name, folderMime )
-            .then( resolveListSingle, rejectOperation );
+        return findItem( name, folderMime ).then( resolveListSingle, rejectOperation );
         
     }
     function notAFolder( file ) { 
@@ -120,31 +105,24 @@ function googleDrive() {
     }
     function findFile( name ) {
         
-        return findItem( name )
-            .then( resolveListSingle( notAFolder ), rejectOperation );
+        return findItem( name ).then( resolveListSingle( notAFolder ), rejectOperation );
         
     }
     function findFileInFolder( name, folderSpec ) {
         
         var containingFolderIds = [ folderSpec.id ];
-        return findItem( name, null, containingFolderIds )
-            .then( resolveListSingle, rejectOperation );
+        return findItem( name, null, containingFolderIds ).then( resolveListSingle, rejectOperation );
 
     }
     function createItem( name, mimeType ) {
         
-        console.log( "Creating item", name, mimeType );            
-        return gapi.client.request( {
-    
-            path: filesAPI,
-            method: "POST",
-            body: { name: name, mimeType: mimeType }
-            
-        } ).then( function( res ) {
+        console.log( "Creating item", name, mimeType );
+        var body = { name: name, mimeType: mimeType };
+        return request( null, body ).then( function( res ) {
             
             var result = res.result;
             if ( ! result ) { return Promise.reject( "Malformed response" ); }
-            return { id: result.id, name: result.name };
+            return asFileSpec( result );
             
         }, rejectOperation );
         
@@ -184,5 +162,6 @@ function googleDrive() {
     this.ensureFolder = ensureFolder;
     this.ensureStorageFile = ensureStorageFile;
     this.listFiles = listFiles;
+    this.createSheet = createSheet;
     
 }

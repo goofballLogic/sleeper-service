@@ -45,25 +45,6 @@ var storageName = "Sleeper Service";
 var fileName = "lambda-1";
 var drive = new googleDrive();
 
-function ensureAppStorage() {
-    
-    drive.ensureFolder( storageName ).then( function( def ) {
-
-        return drive.ensureStorageFile( def, fileName );
-        
-    } ).then( function( res ) {
-        
-        console.log( 1 );
-        console.log( res );
-        
-    } ).catch( function( err ) {
-        
-        console.error( err );
-        
-    } );
-    
-}
-
 function handleGAPIClientInitialised() {
 
     function populateProjectsList( files ) {
@@ -93,5 +74,26 @@ function handleGAPIClientInitialised() {
         button.disabled = false;
         
     } );
-
+    var createProjectButtons = document.querySelectorAll( ".projects button.create" );
+    createProjectButtons.forEach( function( button ) {
+        
+        button.addEventListener( "click", function() {
+        
+            var section = button;
+            while( section && section.tagName !== "SECTION" ) section = section.parentElement;
+            var projectNameInput = section && section.querySelector( ".project-name" );
+            if ( !projectNameInput ) { throw new Error( "No project name input found" ); }
+            var projectName = projectNameInput.value;
+            if ( !projectName ) { throw new Error( "No project name specified" ); }
+            function createSheet( folderSpec ) { return drive.createSheet( folderSpec, projectName ); }
+            drive.ensureFolder( storageName )
+                .then( createSheet )
+                .then( drive.listFiles.bind( drive ) )
+                .then( populateProjectsList )
+                .catch( console.error.bind( console ) );
+                
+        } );
+        button.disabled = false;
+        
+    } );
 }

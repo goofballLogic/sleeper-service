@@ -1,7 +1,3 @@
-// Client ID and API key from the Developer Console
-var CLIENT_ID = '703171357255-6qbavnijqqdft8ckvq85gtane6c3d82u.apps.googleusercontent.com';
-var API_KEY = 'AIzaSyBA5vt92PND_bNslesdICGLy6qv3Q8c8BA';
-
 // Authorization scopes required by the API; multiple scopes can be
 // included, separated by spaces.
 var SCOPES = [

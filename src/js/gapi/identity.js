@@ -1,25 +1,16 @@
 /* global gapi */
 
 import Provider from "./provider.js";
-import config from "../config.js";
-import { init } from "./shared.js";
 
-let loadFlag = false;
-let loadError;
-
-window.handleGAPILoad = () => init( config.gapi )
-    .then( () => { loadFlag = true; } )
-    .catch( ex => { loadError = ex; } );
-
-function buildIdentity( provider ) {
+function buildIdentity( p ) {
 
     const auth = gapi.auth2.getAuthInstance();
     const signedIn = auth.isSignedIn.get();
-    const profile = signedIn ? auth.currentUser.get().getBasicProfile() : {};
+    const profile = signedIn ? auth.currentUser.get().getBasicProfile() : undefined;
     const name = ( signedIn && profile ) ? profile.getName() : undefined;
     const userId = ( signedIn && profile ) ? profile.getEmail() : undefined;
-    const loaded = loadFlag;
-    return { provider, loaded, loadError, signedIn, userId, name };
+    const provider = Object.assign( p.describe(), p.status() );
+    return { provider, signedIn, userId, name };
 
 }
 
@@ -46,7 +37,7 @@ class GoogleIdentity extends Provider {
 
     constructor() {
 
-        super();
+        super( "Your Google identity (e.g. gmail)" );
 
     }
 

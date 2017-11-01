@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    
+
     <title>Hello</title>
     <link rel="stylesheet" type="text/css" href="/public/css/main.css" />
     <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.1/moment.min.js"></script>
@@ -11,11 +11,11 @@
     <script src="/public/js/polly.js"></script>
     <script src="/public/js/app.js"></script>
 
-    <script async defer src="//apis.google.com/js/api.js" 
-        onload="this.onload=function(){};handleGAPILoad()" 
+    <script async defer src="//apis.google.com/js/api.js"
+        onload="this.onload=function(){};document.dispatchEvent(new CustomEvent('google-api-loaded'));"
         onreadystatechange="if (this.readyState === 'complete') this.onload()">
     </script>
-    
+
 </head>
 
 <body>
@@ -32,7 +32,7 @@
             <heading>Projects</heading>
             <button disabled class="list">List</button>
             <ul class="results">
-            
+
             </ul>
             <section class="create-project">
                 <label>

@@ -60,158 +60,11 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 0);
+/******/ 	return __webpack_require__(__webpack_require__.s = 1);
 /******/ })
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-var _identity = __webpack_require__(1);
-
-var _identity2 = _interopRequireDefault(_identity);
-
-var _identity3 = __webpack_require__(4);
-
-var _identity4 = _interopRequireDefault(_identity3);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-document.addEventListener("locate-services", function (e) {
-
-    e.detail(null, {
-
-        identity: (0, _identity2.default)([_identity4.default])
-
-    });
-});
-
-/***/ }),
-/* 1 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-exports.default = factory;
-
-var _tinyEmitter = __webpack_require__(2);
-
-var _tinyEmitter2 = _interopRequireDefault(_tinyEmitter);
-
-var _localStore = __webpack_require__(3);
-
-var _localStore2 = _interopRequireDefault(_localStore);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var functions = ["on", "current", "authorize", "deauthorize"];
-
-function factory(providers) {
-
-    providers.forEach(function (p) {
-        return p.verifyInterface(functions);
-    });
-    return new service(providers);
-}
-
-var chosenKey = "chosen-identity-provider";
-var state = { providers: new WeakMap() };
-
-function findProvider(owner) {
-
-    var chosen = _localStore2.default.getItem(chosenKey);
-    owner.provider = state.providers.get(owner).find(function (x) {
-        return x.key === chosen;
-    });
-}
-
-var service = function (_EventEmitter) {
-    _inherits(service, _EventEmitter);
-
-    function service(providers) {
-        _classCallCheck(this, service);
-
-        var _this = _possibleConstructorReturn(this, (service.__proto__ || Object.getPrototypeOf(service)).call(this));
-
-        state.providers.set(_this, providers);
-        findProvider(_this);
-
-        return _this;
-    }
-
-    _createClass(service, [{
-        key: "providers",
-        value: function providers() {
-
-            var asDescription = function asDescription(_ref) {
-                var key = _ref.key,
-                    description = _ref.description;
-                return { key: key, description: description };
-            };
-            return (state.providers.get(this) || []).map(asDescription);
-        }
-    }, {
-        key: "select",
-        value: function select(provider) {
-
-            _localStore2.default.setItem(chosenKey, provider.key);
-            findProvider(this);
-            return this.current();
-        }
-    }, {
-        key: "deselect",
-        value: function deselect() {
-
-            _localStore2.default.removeItem(chosenKey);
-            findProvider(this);
-            return this.current();
-        }
-    }, {
-        key: "current",
-        value: function current() {
-
-            if (!this.provider) return Promise.reject(new Error("No provider selected"));
-            return this.provider.current();
-        }
-    }, {
-        key: "signIn",
-        value: function signIn() {
-
-            if (!this.provider) return this.current();
-            var continuation = this.current.bind(this);
-            return this.provider.authorize().then(continuation);
-        }
-    }, {
-        key: "signOut",
-        value: function signOut() {
-
-            if (!this.provider) return;
-            var continuation = this.current.bind(this);
-            return this.provider.deauthorize().then(continuation);
-        }
-    }]);
-
-    return service;
-}(_tinyEmitter2.default);
-
-/***/ }),
-/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -282,6 +135,115 @@ E.prototype = {
 module.exports = E;
 
 /***/ }),
+/* 1 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _identity = __webpack_require__(2);
+
+var _identity2 = _interopRequireDefault(_identity);
+
+var _capabilities = __webpack_require__(10);
+
+var _capabilities2 = _interopRequireDefault(_capabilities);
+
+var _identity3 = __webpack_require__(4);
+
+var _identity4 = _interopRequireDefault(_identity3);
+
+var _capabilities3 = __webpack_require__(11);
+
+var _capabilities4 = _interopRequireDefault(_capabilities3);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+document.addEventListener("locate-services", function (e) {
+
+    e.detail(null, {
+
+        identity: new _identity2.default([_identity4.default]),
+        capabilities: new _capabilities2.default([_capabilities4.default])
+
+    });
+});
+
+/***/ }),
+/* 2 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _service = __webpack_require__(9);
+
+var _service2 = _interopRequireDefault(_service);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var requiredFunctions = ["current", "authorize", "deauthorize"];
+var chosenKey = "chosen-identity-provider";
+
+var IdentityService = function (_Service) {
+    _inherits(IdentityService, _Service);
+
+    function IdentityService(providers) {
+        _classCallCheck(this, IdentityService);
+
+        return _possibleConstructorReturn(this, (IdentityService.__proto__ || Object.getPrototypeOf(IdentityService)).call(this, providers, chosenKey, requiredFunctions));
+    }
+
+    _createClass(IdentityService, [{
+        key: "current",
+        value: function current() {
+
+            return this.ensureProvider().then(function (p) {
+                return p.current();
+            });
+        }
+    }, {
+        key: "signIn",
+        value: function signIn() {
+            var _this2 = this;
+
+            return this.ensureProvider().then(function (p) {
+                return p.authorize();
+            }).then(function () {
+                return _this2.current();
+            });
+        }
+    }, {
+        key: "signOut",
+        value: function signOut() {
+            var _this3 = this;
+
+            return this.ensureProvider().then(function (p) {
+                return p.deauthorize();
+            }).then(function () {
+                return _this3.current();
+            });
+        }
+    }]);
+
+    return IdentityService;
+}(_service2.default);
+
+exports.default = IdentityService;
+
+/***/ }),
 /* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -310,12 +272,6 @@ var _provider = __webpack_require__(5);
 
 var _provider2 = _interopRequireDefault(_provider);
 
-var _config = __webpack_require__(7);
-
-var _config2 = _interopRequireDefault(_config);
-
-var _shared = __webpack_require__(8);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -324,26 +280,15 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } /* global gapi */
 
-var loadFlag = false;
-var loadError = void 0;
-
-window.handleGAPILoad = function () {
-    return (0, _shared.init)(_config2.default.gapi).then(function () {
-        loadFlag = true;
-    }).catch(function (ex) {
-        loadError = ex;
-    });
-};
-
-function buildIdentity(provider) {
+function buildIdentity(p) {
 
     var auth = gapi.auth2.getAuthInstance();
     var signedIn = auth.isSignedIn.get();
-    var profile = signedIn ? auth.currentUser.get().getBasicProfile() : {};
+    var profile = signedIn ? auth.currentUser.get().getBasicProfile() : undefined;
     var name = signedIn && profile ? profile.getName() : undefined;
     var userId = signedIn && profile ? profile.getEmail() : undefined;
-    var loaded = loadFlag;
-    return { provider: provider, loaded: loaded, loadError: loadError, signedIn: signedIn, userId: userId, name: name };
+    var provider = Object.assign(p.describe(), p.status());
+    return { provider: provider, signedIn: signedIn, userId: userId, name: name };
 }
 
 function signout(resolve, reject) {
@@ -368,7 +313,7 @@ var GoogleIdentity = function (_Provider) {
     function GoogleIdentity() {
         _classCallCheck(this, GoogleIdentity);
 
-        return _possibleConstructorReturn(this, (GoogleIdentity.__proto__ || Object.getPrototypeOf(GoogleIdentity)).call(this));
+        return _possibleConstructorReturn(this, (GoogleIdentity.__proto__ || Object.getPrototypeOf(GoogleIdentity)).call(this, "Your Google identity (e.g. gmail)"));
     }
 
     _createClass(GoogleIdentity, [{
@@ -410,9 +355,17 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
 var _providerBase = __webpack_require__(6);
 
 var _providerBase2 = _interopRequireDefault(_providerBase);
+
+var _config = __webpack_require__(7);
+
+var _config2 = _interopRequireDefault(_config);
+
+var _shared = __webpack_require__(8);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -422,20 +375,42 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
+var loadFlag = false;
+var loadError = void 0;
+
+console.log("registering google-api-loaded listener");
+
+document.addEventListener("google-api-loaded", function handleAPILoaded() {
+
+    console.log("Google API loaded event");
+    (0, _shared.init)(_config2.default.gapi).then(function () {
+        loadFlag = true;
+    }).catch(function (ex) {
+        loadError = ex;
+    });
+});
+
 var Provider = function (_ProviderBase) {
     _inherits(Provider, _ProviderBase);
 
-    function Provider() {
+    function Provider(description) {
         _classCallCheck(this, Provider);
 
-        return _possibleConstructorReturn(this, (Provider.__proto__ || Object.getPrototypeOf(Provider)).call(this, "gapi", "Your Google identity (e.g. gmail)"));
+        return _possibleConstructorReturn(this, (Provider.__proto__ || Object.getPrototypeOf(Provider)).call(this, "gapi", description));
     }
+
+    _createClass(Provider, [{
+        key: "status",
+        value: function status() {
+
+            return { loaded: loadFlag, loadError: loadError };
+        }
+    }]);
 
     return Provider;
 }(_providerBase2.default);
 
 exports.default = Provider;
-;
 
 /***/ }),
 /* 6 */
@@ -450,7 +425,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _tinyEmitter = __webpack_require__(2);
+var _tinyEmitter = __webpack_require__(0);
 
 var _tinyEmitter2 = _interopRequireDefault(_tinyEmitter);
 
@@ -491,6 +466,15 @@ var Provider = function (_EventEmitter) {
                     throw new Error("Provider " + provider + " does not provide function '" + func + "' (" + maybeFunction + ")");
                 }
             });
+        }
+    }, {
+        key: "describe",
+        value: function describe() {
+            var key = this.key,
+                name = this.name,
+                description = this.description;
+
+            return { key: key, name: name, description: description };
         }
     }]);
 
@@ -556,6 +540,482 @@ function init(config) {
     var naga = tryInitAuthClient.bind(null, config);
     return new Promise(naga);
 }
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _tinyEmitter = __webpack_require__(0);
+
+var _tinyEmitter2 = _interopRequireDefault(_tinyEmitter);
+
+var _localStore = __webpack_require__(3);
+
+var _localStore2 = _interopRequireDefault(_localStore);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var _providers = new WeakMap();
+var chosenKeys = new WeakMap();
+
+function findProvider(owner) {
+
+    var chosenKey = chosenKeys.get(owner);
+    var chosen = _localStore2.default.getItem(chosenKey);
+    owner.provider = _providers.get(owner).find(function (x) {
+        return x.key === chosen;
+    });
+}
+
+var Service = function (_EventEmitter) {
+    _inherits(Service, _EventEmitter);
+
+    function Service(availableProviders, chosenKey, requiredFunctions) {
+        _classCallCheck(this, Service);
+
+        var _this = _possibleConstructorReturn(this, (Service.__proto__ || Object.getPrototypeOf(Service)).call(this));
+
+        availableProviders.forEach(function (p) {
+            return p.verifyInterface(requiredFunctions);
+        });
+        _providers.set(_this, availableProviders);
+        chosenKeys.set(_this, chosenKey);
+        findProvider(_this);
+
+        return _this;
+    }
+
+    _createClass(Service, [{
+        key: "providers",
+        value: function providers() {
+
+            return (_providers.get(this) || []).map(function (p) {
+                return p.describe();
+            });
+        }
+    }, {
+        key: "ensureProvider",
+        value: function ensureProvider() {
+
+            if (!this.provider) return Promise.reject(new Error("No provider selected"));
+            return Promise.resolve(this.provider);
+        }
+    }, {
+        key: "select",
+        value: function select(provider) {
+
+            var chosenKey = chosenKeys.get(this);
+            _localStore2.default.setItem(chosenKey, provider.key);
+            findProvider(this);
+        }
+    }, {
+        key: "deselect",
+        value: function deselect() {
+
+            var chosenKey = chosenKeys.get(this);
+            _localStore2.default.removeItem(chosenKey);
+            findProvider(this);
+        }
+    }]);
+
+    return Service;
+}(_tinyEmitter2.default);
+
+exports.default = Service;
+
+/***/ }),
+/* 10 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _service = __webpack_require__(9);
+
+var _service2 = _interopRequireDefault(_service);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var requiredFunctions = ["clear", "verifyList", "verifyStore", "verifyGet", "verifyDelete"];
+var chosenKey = "chosen-capabilities-provider";
+
+var CapabilitiesService = function (_Service) {
+    _inherits(CapabilitiesService, _Service);
+
+    function CapabilitiesService(providers) {
+        _classCallCheck(this, CapabilitiesService);
+
+        return _possibleConstructorReturn(this, (CapabilitiesService.__proto__ || Object.getPrototypeOf(CapabilitiesService)).call(this, providers, chosenKey, requiredFunctions));
+    }
+
+    _createClass(CapabilitiesService, [{
+        key: "verifyStorage",
+        value: function verifyStorage() {
+
+            return this.ensureProvider().then(function (p) {
+                return p.clear();
+            }).then(function (p) {
+                return Promise.all([p.verifyList(), p.verifyStore(), p.verifyGet(), p.verifyDelete()]).then(function (_ref) {
+                    var _ref2 = _slicedToArray(_ref, 4),
+                        canList = _ref2[0],
+                        canStore = _ref2[1],
+                        canGet = _ref2[2],
+                        canDelete = _ref2[3];
+
+                    return { canList: canList, canStore: canStore, canGet: canGet, canDelete: canDelete };
+                });
+            });
+        }
+    }]);
+
+    return CapabilitiesService;
+}(_service2.default);
+
+exports.default = CapabilitiesService;
+
+/***/ }),
+/* 11 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _provider = __webpack_require__(5);
+
+var _provider2 = _interopRequireDefault(_provider);
+
+var _googleDrive = __webpack_require__(12);
+
+var _googleDrive2 = _interopRequireDefault(_googleDrive);
+
+var _config = __webpack_require__(7);
+
+var _config2 = _interopRequireDefault(_config);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var appName = _config2.default.appName;
+
+var verifications = new WeakMap();
+var drives = new WeakMap();
+
+function initVerification(owner) {
+
+    var canList = false;
+    var canStore = false;
+    var canDelete = false;
+    var canGet = false;
+    var testName = "__temp_" + Date.now() + "_" + Math.random();
+    var drive = drives.get(owner);
+    return drive.ensureFolder(appName).then(function (folder) {
+        return drive.ensureFileInFolder(folder, testName);
+    }).then(function () {
+        canStore = true;
+    }).then(function () {
+
+        var verification = { canList: canList, canStore: canStore, canDelete: canDelete, canGet: canGet };
+        verifications.set(owner, verification);
+        return verification;
+    });
+}
+
+function verifyAll(owner) {
+
+    return Promise.resolve().then(function () {
+        return verifications.get(owner) || verifications.set(owner, initVerification(owner)).get(owner);
+    });
+}
+
+var GoogleCapabilities = function (_Provider) {
+    _inherits(GoogleCapabilities, _Provider);
+
+    function GoogleCapabilities() {
+        _classCallCheck(this, GoogleCapabilities);
+
+        var _this = _possibleConstructorReturn(this, (GoogleCapabilities.__proto__ || Object.getPrototypeOf(GoogleCapabilities)).call(this, "Your Google Drive storage"));
+
+        drives.set(_this, new _googleDrive2.default());
+
+        return _this;
+    }
+
+    _createClass(GoogleCapabilities, [{
+        key: "clear",
+        value: function clear() {
+            var _this2 = this;
+
+            return Promise.resolve().then(function () {
+                return verifications.delete(_this2);
+            }).then(function () {
+                return _this2;
+            });
+        }
+    }, {
+        key: "verifyList",
+        value: function verifyList() {
+            return verifyAll(this).then(function (v) {
+                return v && v.canList;
+            });
+        }
+    }, {
+        key: "verifyStore",
+        value: function verifyStore() {
+            return verifyAll(this).then(function (v) {
+                return v && v.canStore;
+            });
+        }
+    }, {
+        key: "verifyGet",
+        value: function verifyGet() {
+            return verifyAll(this).then(function (v) {
+                return v && v.canGet;
+            });
+        }
+    }, {
+        key: "verifyDelete",
+        value: function verifyDelete() {
+            return verifyAll(this).then(function (v) {
+                return v && v.canDelete;
+            });
+        }
+    }]);
+
+    return GoogleCapabilities;
+}(_provider2.default);
+
+exports.default = new GoogleCapabilities();
+
+/***/ }),
+/* 12 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+/*global gapi*/
+
+var filesAPI = "https://www.googleapis.com/drive/v3/files";
+var folderMime = "application/vnd.google-apps.folder";
+var sheetsAPI = "https://sheets.googleapis.com/v4/spreadsheets";
+var sheetMime = "application/vnd.google-apps.spreadsheet";
+
+var asFileSpec = function asFileSpec(_ref) {
+    var id = _ref.id,
+        name = _ref.name;
+    return { id: id, name: name };
+};
+var asFailSpec = function asFailSpec(code, message, isLogical) {
+    return { code: code, message: message, isLogical: isLogical };
+};
+var notAFolder = function notAFolder(_ref2) {
+    var mimeType = _ref2.mimeType;
+    return mimeType !== folderMime;
+};
+
+function query(o) {
+
+    return [o.name ? "name='" + o.name + "'" : null, o.mime ? "mimeType='" + o.mime + "'" : null, o.parent ? "'" + o.parent + "' in parents" : null, "trashed = false"].filter(function (x) {
+        return x;
+    }).join(" and ");
+}
+
+function request(params, body, method) {
+
+    method = method || (body ? "POST" : "GET");
+    var options = { path: filesAPI, params: params, method: method, body: body };
+    console.log(options);
+    return gapi.client.request(options);
+}
+
+function listSheets(containingFolderId) {
+
+    var q = query({ mime: sheetMime, parent: containingFolderId });
+    return request({ q: q });
+}
+
+function resolveList(res) {
+
+    return Promise.resolve().then(function () {
+        return res.result.files.map(asFileSpec);
+    });
+}
+
+function resolveListSingle(filter, res) {
+
+    if (!res) {
+
+        if (typeof filter === "function") {
+
+            // curry
+            return function (deferredRes) {
+                return resolveListSingle(filter, deferredRes);
+            };
+        }
+        // no filter used
+        res = filter;
+        filter = undefined;
+    }
+
+    return new Promise(function (resolve, reject) {
+        var _res = res,
+            result = _res.result;
+        var files = result.files;
+
+        if (files && files.length && filter) {
+
+            files = files.filter(filter);
+        }
+        return files.length < 1 ? reject(asFailSpec(404, "Not found", true)) : resolve(asFileSpec(files[0]));
+    });
+}
+
+function rejectOperation(res) {
+
+    return new Promise(function (resolve, reject) {
+
+        reject(asFailSpec(res.result.error));
+    });
+}
+
+function findItem(name, mimeType, containingFolderId) {
+
+    var q = query({ name: name, mime: mimeType, parent: containingFolderId });
+    return new Promise(function (resolve, reject) {
+        return request({ q: q }).then(resolve, reject);
+    });
+}
+findItem.folder = function (name) {
+    return findItem(name, folderMime);
+};
+findItem.inFolder = function (folderSpec) {
+    return function (name) {
+        return findItem(name, undefined, [folderSpec.id]);
+    };
+};
+
+function createItem(name, mimeType, parents) {
+
+    return request(null, { name: name, mimeType: mimeType, parents: parents }).then(function (res) {
+        return Promise.resolve().then(function () {
+            return asFileSpec(res.result);
+        });
+    }, rejectOperation);
+}
+createItem.folder = function (name) {
+    return createItem(name, folderMime);
+};
+createItem.sheet = {
+
+    inFolder: function inFolder(_ref3) {
+        var id = _ref3.id;
+        return function (name) {
+            return createItem(name, sheetMime, [id]);
+        };
+    }
+
+};
+createItem.ifMissing = function (name, strategy) {
+    return function (err) {
+        return err.isLogical ? strategy(name) : Promise.reject(err);
+    };
+};
+
+var GoogleDrive = function () {
+    function GoogleDrive() {
+        _classCallCheck(this, GoogleDrive);
+    }
+
+    _createClass(GoogleDrive, [{
+        key: "listFiles",
+        value: function listFiles(folderSpec) {
+
+            return listSheets(folderSpec.id).then(resolveList, rejectOperation);
+        }
+    }, {
+        key: "findFolder",
+        value: function findFolder(name) {
+
+            var resolveOperation = resolveListSingle;
+            return findItem.folder(name).then(resolveOperation, rejectOperation);
+        }
+    }, {
+        key: "findFile",
+        value: function findFile(name) {
+
+            var resolveOperation = resolveListSingle(notAFolder);
+            return findItem(name).then(resolveOperation, rejectOperation);
+        }
+    }, {
+        key: "ensureFileInFolder",
+        value: function ensureFileInFolder(folderSpec, name) {
+
+            var resolveOperation = resolveListSingle(notAFolder);
+            var maybeCreate = createItem.ifMissing(name, createItem.sheet.inFolder(folderSpec));
+            return findItem.inFolder(folderSpec)(name).then(resolveOperation, rejectOperation).catch(maybeCreate);
+        }
+    }, {
+        key: "ensureFolder",
+        value: function ensureFolder(name) {
+
+            var resolveOperation = resolveListSingle;
+            var maybeCreate = createItem.ifMissing(name, createItem.folder);
+            return findItem.folder(name).then(resolveOperation, rejectOperation).catch(maybeCreate);
+        }
+    }]);
+
+    return GoogleDrive;
+}();
+
+exports.default = GoogleDrive;
 
 /***/ })
 /******/ ]);

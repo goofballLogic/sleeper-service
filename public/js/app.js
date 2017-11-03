@@ -719,9 +719,9 @@ var _provider = __webpack_require__(2);
 
 var _provider2 = _interopRequireDefault(_provider);
 
-var _files = __webpack_require__(12);
+var _Data = __webpack_require__(12);
 
-var _files2 = _interopRequireDefault(_files);
+var _Data2 = _interopRequireDefault(_Data);
 
 var _config = __webpack_require__(3);
 
@@ -738,7 +738,6 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var appName = _config2.default.appName;
 
 var verifications = new WeakMap();
-var drive = new _files2.default();
 
 function initVerification(owner) {
 
@@ -746,28 +745,19 @@ function initVerification(owner) {
     var canStore = false;
     var canDelete = false;
     var canGet = false;
-    var testName = "__temp_" + Date.now() + "_" + Math.floor(Math.random() * Date.now());
-    console.log(testName);
+    var testName = "__temp_testing_" + appName;
     var isTestFile = function isTestFile(f) {
         return f.name === testName;
     };
-    return drive.ensureFolder(appName).then(function (folder) {
-        return drive.ensureFileInFolder(folder, testName).then(function () {
-            canStore = true;
+
+    return _Data2.default.inFolder(appName).then(function (data) {
+        return Promise.resolve().then(function () {
+            return data.save(testName, { "hello": "world" });
         }).then(function () {
-            return drive.listFiles(folder);
-        }).then(function (list) {
-            canList = !!list.find(isTestFile);
-        }).then(function () {
-            return drive.findSheet(folder, testName);
-        }).then(function () {
-            canGet = true;
-        }).then(function () {
-            return drive.deleteFile(folder, testName);
-        }).then(function () {
-            return drive.listFiles(folder);
-        }).then(function (list) {
-            canDelete = !list.find(isTestFile);
+            return data.list();
+        }).then(function (files) {
+            canList = true;
+            canStore = !!files.find(isTestFile);
         });
     }).then(function () {
         return verifications.set(owner, { canList: canList, canStore: canStore, canDelete: canDelete, canGet: canGet }).get(owner);
@@ -847,304 +837,210 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); /*global gapi*/
-
-var _sheet = __webpack_require__(13);
-
-var _sheet2 = _interopRequireDefault(_sheet);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
+/* global gapi */
 var filesAPI = "https://www.googleapis.com/drive/v3/files";
-var folderMime = "application/vnd.google-apps.folder";
-var sheetsAPI = "https://sheets.googleapis.com/v4/spreadsheets";
-var sheetMime = "application/vnd.google-apps.spreadsheet";
+var uploadAPI = "https://content.googleapis.com/upload/drive/v3/files";
+var folderMimeType = "application/vnd.google-apps.folder";
+var boundary = "......";
+var multiPartMimeType = "multipart/related; boundary=" + boundary;
+var dataMimeType = "application/json";
+var JSONcontentType = "application/json; charset=UTF-8";
 
-var asFileSpec = function asFileSpec(_ref) {
-    var id = _ref.id,
-        name = _ref.name;
-    return { id: id, name: name };
-};
-var asFailSpec = function asFailSpec(code, message, isLogical) {
-    return { code: code, message: message, isLogical: isLogical };
-};
-var notAFolder = function notAFolder(_ref2) {
-    var mimeType = _ref2.mimeType;
-    return mimeType !== folderMime;
-};
+function request(options) {
 
-function query(o) {
-
-    return [o.name ? "name='" + o.name + "'" : null, o.mime ? "mimeType='" + o.mime + "'" : null, o.parent ? "'" + o.parent + "' in parents" : null, "trashed = false"].filter(function (x) {
-        return x;
-    }).join(" and ");
-}
-
-function request(params, body, method, path) {
-
-    method = method || (body ? "POST" : "GET");
-    var options = { path: path, params: params, method: method, body: body };
-    console.log(options);
+    options = Object.assign({ method: "GET", path: filesAPI }, options);
+    console.log("request:", options);
     return new Promise(function (resolve, reject) {
         return gapi.client.request(options).then(resolve, reject);
     });
 }
 
-function requestSheets(params, body, method, path) {
+function createFolder(name) {
 
-    path = path ? "" + sheetsAPI + path : sheetsAPI;
-    return request(params, body, method, path);
+    var mimeType = folderMimeType;
+    var body = { name: name, mimeType: mimeType };
+    var method = "POST";
+    return request({ method: method, body: body });
 }
 
-function requestFiles(params, body, method, path) {
+function asSpec(thing) {
+    var _ref = thing || {},
+        id = _ref.id,
+        name = _ref.name;
 
-    path = path ? "" + filesAPI + path : filesAPI;
-    return request(params, body, method, path);
+    return { id: id, name: name };
 }
 
-function listSheets(containingFolderId) {
+function ensureFolder(name) {
 
-    var q = query({ mime: sheetMime, parent: containingFolderId });
-    return requestFiles({ q: q });
+    var q = "name='" + name + "' and mimeType='" + folderMimeType + "' and trashed=false";
+    var params = { q: q };
+    return request({ params: params }).then(function (res) {
+        return res.result.files;
+    }).then(function (files) {
+        return files.length ? files[0] : null;
+    }).then(function (maybeFolder) {
+        return maybeFolder || createFolder(name);
+    }).then(asSpec);
 }
 
-function rejectOperation(res) {
+function listFilesInFolder(folder) {
 
-    return asFailSpec(res.result.error);
-}
-
-function resolveList(res) {
-
-    return res.result.files.map(asFileSpec);
-}
-
-function resolveListSingle(filter, res) {
-
-    if (!res) {
-
-        if (typeof filter === "function") {
-
-            return function (deferredRes) {
-                return resolveListSingle(filter, deferredRes);
-            };
-        }
-        // no filter used
-        res = filter;
-        filter = undefined;
-    }
-
-    return new Promise(function (resolve, reject) {
-        var _res = res,
-            result = _res.result;
-        var files = result.files;
-
-        if (files && files.length && filter) {
-
-            files = files.filter(filter);
-        }
-        return files.length < 1 ? reject(asFailSpec(404, "Not found", true)) : resolve(asFileSpec(files[0]));
+    var q = "mimeType='" + dataMimeType + "' and trashed=false";
+    var params = { q: q };
+    return request({ params: params }).then(function (res) {
+        return res.result.files;
+    }).then(function (files) {
+        return files.map(asSpec);
     });
 }
 
-/* find */
-function findItem(name, mime, parent) {
+function findFileInFolder(folder, name) {
+    var _ref2 = folder || {},
+        id = _ref2.id;
 
-    var q = query({ name: name, mime: mime, parent: parent });
-    return requestFiles({ q: q });
-}
-findItem.folder = function (name) {
-    return findItem(name, folderMime);
-};
-findItem.sheet = {
-
-    inFolder: function inFolder(_ref3) {
-        var id = _ref3.id;
-        return function (name) {
-            return findItem(name, undefined, [id]);
-        };
-    }
-
-};
-
-/* create */
-function createItem(name, mimeType, parents) {
-
-    var body = { name: name, mimeType: mimeType, parents: parents };
-    return requestFiles(null, body).then(function (res) {
-        return asFileSpec(res.result);
+    var q = "name='" + name + "' and '" + id + "' in parents and mimeType='" + dataMimeType + "' and trashed=false";
+    var params = { q: q };
+    return request({ params: params }).then(function (res) {
+        return res.result.files;
+    }).then(function (files) {
+        return files.length ? asSpec(files[0]) : null;
     });
 }
-createItem.folder = function (name) {
-    return createItem(name, folderMime);
-};
-createItem.sheet = {
 
-    inFolder: function inFolder(_ref4) {
-        var id = _ref4.id;
-        return function (name) {
-            return createItem(name, sheetMime, [id]);
-        };
-    }
+function JSONpart(obj) {
 
-};
-createItem.ifMissing = function (name, strategy) {
-    return function (err) {
-        return err.isLogical ? strategy(name) : Promise.reject(err);
-    };
-};
-
-/* delete */
-function deleteItem(_ref5) {
-    var id = _ref5.id;
-
-
-    return requestFiles(null, null, "DELETE", "/" + id);
+    return "\r\nContent-Type: " + JSONcontentType + "\r\n\r\n" + JSON.stringify(obj, null, 1);
 }
 
-function getData(_ref6) {
-    var id = _ref6.id;
+function multipart() {
 
+    var partStart = "\r\n--" + boundary;
+    var partEnd = partStart + "--";
 
-    console.log(id);
-}
-
-var GoogleDrive = function () {
-    function GoogleDrive() {
-        _classCallCheck(this, GoogleDrive);
+    for (var _len = arguments.length, parts = Array(_len), _key = 0; _key < _len; _key++) {
+        parts[_key] = arguments[_key];
     }
 
-    _createClass(GoogleDrive, [{
-        key: "listFiles",
-        value: function listFiles(folderSpec) {
+    return partStart + parts.join(partStart) + partEnd;
+}
 
-            return listSheets(folderSpec.id).then(resolveList).catch(rejectOperation);
+function createInFolder(folder, name, data) {
+
+    var method = "POST";
+    var headers = { "Content-Type": multiPartMimeType };
+    var params = { "uploadType": "multipart" };
+    var metadata = { parents: [folder.id], name: name };
+    var body = multipart(JSONpart(metadata), JSONpart(data));
+    var path = uploadAPI;
+    return request({ path: path, method: method, params: params, headers: headers, body: body });
+}
+
+function updateInFolder(folder, file, data) {
+
+    var method = "PATCH";
+    var params = { "uploadType": "media" };
+    var mimeType = dataMimeType;
+    var body = JSON.stringify(data);
+    var path = uploadAPI + "/" + file.id;
+    return request({ path: path, method: method, params: params, mimeType: mimeType, body: body });
+}
+
+function saveInFolder(folder, name, data) {
+
+    var headers = { "Content-Type": multiPartMimeType };
+    var path = uploadAPI;
+    return findFileInFolder(folder, name).then(function (maybeFile) {
+        return maybeFile ? updateInFolder(folder, maybeFile, data) : createInFolder(folder, name, data);
+    }).then(function (res) {
+        return asSpec(res.result);
+    });
+}
+
+function cleanUpError(err) {
+
+    if (err.result) {
+
+        return Promise.reject("WTF am i supposed to do with this? " + JSON.stringify(err.result, null, 3));
+    } else {
+
+        return Promise.reject({
+            code: err.status || 500,
+            message: err.body || err.statusText || "Unknown error",
+            err: err
+        });
+    }
+}
+
+var Data = function () {
+    _createClass(Data, null, [{
+        key: "inFolder",
+
+
+        // builds a Data repository for the named folder
+        // if the folder doesn't already exist, creates it
+        value: function inFolder(folderName) {
+
+            return Promise.resolve().then(function () {
+                return ensureFolder(folderName);
+            }).then(function (folderSpec) {
+                return new Data(folderSpec);
+            });
         }
-    }, {
-        key: "findSheet",
-        value: function findSheet(folderSpec, name) {
 
-            return findItem.sheet.inFolder(folderSpec)(name).then(function (res) {
-                return resolveListSingle(res);
-            }).then(function (item) {
-                return new _sheet2.default(item);
-            }).catch(rejectOperation);
+        // make a Data repository for files stored in the specified folder
+
+    }]);
+
+    function Data(folderSpec) {
+        _classCallCheck(this, Data);
+
+        this.folder = folderSpec;
+    }
+
+    // returns a list of all data files in this folder (JSON files)
+    // if maybePrefix is specified, only files with the specified prefix are returned
+
+
+    _createClass(Data, [{
+        key: "list",
+        value: function list(maybePrefix) {
+
+            if (maybePrefix) {
+
+                return Promise.reject(new Error("Not implemented"));
+            }
+            return listFilesInFolder(this.folder).catch(cleanUpError);
         }
-    }, {
-        key: "deleteFile",
-        value: function deleteFile(folderSpec, name) {
 
-            return findItem.sheet.inFolder(folderSpec)(name).catch(function (err) {
-                return err.isLogical ? null : Promise.reject(err);
-            }).then(function (res) {
-                return res ? resolveListSingle(res) : null;
-            }).then(function (item) {
-                return item ? deleteItem(item) : null;
-            }).catch(rejectOperation);
+        // saves the specified data in a data file with the specified name
+
+    }, {
+        key: "save",
+        value: function save(name, data) {
+
+            return saveInFolder(this.folder, name, data).catch(cleanUpError);
         }
-    }, {
-        key: "ensureFileInFolder",
-        value: function ensureFileInFolder(folderSpec, name) {
 
-            var createItemInFolder = createItem.sheet.inFolder(folderSpec);
-            var maybeCreate = createItem.ifMissing(name, createItemInFolder);
-            return findItem.sheet.inFolder(folderSpec)(name).then(resolveListSingle(notAFolder)).catch(maybeCreate).catch(rejectOperation);
-        }
-    }, {
-        key: "ensureFolder",
-        value: function ensureFolder(name) {
+        // deletes the data file with the specified name
+        // if the data file is already gone, resolves with { code: 404 }
 
-            var maybeCreate = createItem.ifMissing(name, createItem.folder);
-            return findItem.folder(name).then(resolveListSingle).catch(maybeCreate).catch(rejectOperation);
+    }, {
+        key: "trash",
+        value: function trash(name) {
+
+            return Promise.reject(new Error("Not implemented"));
         }
     }]);
 
-    return GoogleDrive;
+    return Data;
 }();
 
-exports.default = GoogleDrive;
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _table = __webpack_require__(14);
-
-var _table2 = _interopRequireDefault(_table);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var files = new WeakMap();
-
-var Sheet = function () {
-    function Sheet(fileSpec) {
-        _classCallCheck(this, Sheet);
-
-        files.set(this, fileSpec);
-    }
-
-    _createClass(Sheet, [{
-        key: "listTables",
-        value: function listTables() {
-
-            return Promise.reject("Not implenented");
-        }
-    }, {
-        key: "deleteTable",
-        value: function deleteTable(name) {
-
-            return Promise.reject("Not implemented");
-        }
-    }, {
-        key: "createTable",
-        value: function createTable(name, schema) {
-
-            return Promise.reject("Not imlemented");
-        }
-    }, {
-        key: "findTable",
-        value: function findTable(name) {
-
-            console.log(name);
-            return Promise.reject("Not implemented");
-        }
-    }]);
-
-    return Sheet;
-}();
-
-exports.default = Sheet;
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-var Table = function Table() {
-    _classCallCheck(this, Table);
-};
-
-exports.default = Table;
+exports.default = Data;
 
 /***/ })
 /******/ ]);

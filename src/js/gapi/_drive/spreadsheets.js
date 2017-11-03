@@ -18,7 +18,7 @@ function query( o ) {
         o.name ? "name='" + o.name + "'" : null,
         o.mime ? "mimeType='" + o.mime + "'" : null,
         o.parent ? "'" + o.parent + "' in parents" : null,
-        "trashed = false"
+        "trashed=false"
 
     ].filter( x => x ).join( " and " );
 
@@ -108,7 +108,9 @@ function resolveListSingle( filter, res ) {
 function findItem( name, mime, parent ) {
 
     const q = query( { name, mime, parent } );
-    return requestFiles( { q } );
+    return requestFiles( { q } )
+        .then( resolveListSingle )
+        .catch( rejectOperation );
 
 }
 findItem.folder = name => findItem( name, folderMime );
@@ -117,6 +119,8 @@ findItem.sheet = {
     inFolder: ( { id } ) => name => findItem( name, undefined, [ id ] )
 
 };
+
+
 
 /* create */
 function createItem( name, mimeType, parents ) {
@@ -146,17 +150,32 @@ function getData( { id } ) {
 
 }
 
-export default class GoogleDrive {
+export default class Spreadsheets {
 
-    listFiles( folderSpec ) {
+    static inFolder( name ) {
 
-        return listSheets( folderSpec.id )
+        return findItem.folder( name ).then( folderSpec => new Spreadsheets( folderSpec ) );
+
+    }
+
+    constructor( folderName ) {
+
+
+    }
+
+    list( maybeFolderSpec ) {
+
+        return Promise.resolve()
+            .then( () => resolveFolderId( maybeFolderSpec ) )
+            .then( maybeFolderId => listSheets( maybeFolderId ) )
+            .then( )
+        return listSheets( maybeFolderSpec )
             .then( resolveList )
             .catch( rejectOperation );
 
     }
 
-    findSheet( folderSpec, name ) {
+    open( name, folderSpec ) {
 
         return findItem.sheet.inFolder( folderSpec )( name )
             .then( res => resolveListSingle( res ) )
@@ -165,7 +184,13 @@ export default class GoogleDrive {
 
     }
 
-    deleteFile( folderSpec, name ) {
+    create( name, folderSpec ) {
+
+        return Promise.resolve()
+            .then( folderSpec)
+    }
+
+    trash( name, folderSpec ) {
 
         return findItem.sheet.inFolder( folderSpec )( name )
             .catch( err => err.isLogical ? null : Promise.reject( err ) )
@@ -175,7 +200,7 @@ export default class GoogleDrive {
 
     }
 
-    ensureFileInFolder( folderSpec, name ) {
+/*    ensureFileInFolder( folderSpec, name ) {
 
         const createItemInFolder = createItem.sheet.inFolder( folderSpec );
         const maybeCreate = createItem.ifMissing( name, createItemInFolder );
@@ -194,6 +219,6 @@ export default class GoogleDrive {
             .catch( maybeCreate )
             .catch( rejectOperation );
 
-    }
+    } */
 
 }

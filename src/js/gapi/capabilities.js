@@ -1,10 +1,9 @@
 import Provider from "./provider.js";
-import Files from "./drive/files.js";
+import Data from "./drive/Data.js";
 import config from "../config.js";
 
 const { appName } = config;
 const verifications = new WeakMap();
-const drive = new Files();
 
 function initVerification( owner ) {
 
@@ -12,28 +11,27 @@ function initVerification( owner ) {
     let canStore = false;
     let canDelete = false;
     let canGet = false;
-    const testName = "__temp_" + Date.now() + "_" + Math.floor( Math.random() * Date.now() );
-console.log( testName );
+    const testName = `__temp_testing_${appName}`;
     const isTestFile = f => f.name === testName;
-    return drive.ensureFolder( appName ).then( folder =>
 
-        drive.ensureFileInFolder( folder, testName )
-            .then( () => { canStore = true; } )
-            .then( () => drive.listFiles( folder ) )
-            .then( list => { canList = !!list.find( isTestFile ); } )
-            .then( () => drive.findSheet( folder, testName ) )
-            .then( () => { canGet = true; } )
-            .then( () => drive.deleteFile( folder, testName ) )
-            .then( () => drive.listFiles( folder ) )
-            .then( list => { canDelete = !list.find( isTestFile ); } )
 
-    ).then( () =>
+    return Data.inFolder( appName )
+        .then( data => Promise.resolve()
 
-        verifications
-            .set( owner, { canList, canStore, canDelete, canGet } )
-            .get( owner )
+                .then( () => data.save( testName, { "hello": "world" } ) )
+                .then( () => data.list() )
+                .then( files => {
+                    canList = true;
+                    canStore = !!files.find( isTestFile );
+                } )
 
-    );
+        ).then( () =>
+
+            verifications
+                .set( owner, { canList, canStore, canDelete, canGet } )
+                .get( owner )
+
+        );
 
 }
 

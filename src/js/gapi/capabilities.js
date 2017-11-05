@@ -1,3 +1,5 @@
+/* global fetch */
+
 import Provider from "./provider.js";
 import Data from "./drive/Data.js";
 import config from "../config.js";
@@ -5,33 +7,42 @@ import config from "../config.js";
 const { appName } = config;
 const verifications = new WeakMap();
 
+function verify( data, testName, testContent ) {
+
+console.log( arguments );
+    const isTestFile = f => f.name === testName;
+    let canList = undefined;
+    let canStore = undefined;
+    let canDelete = undefined;
+    let canGet = undefined;
+    return data.save( testName, testContent )
+        .then( () => data.load( testName ) )
+        .then( content => JSON.stringify( testContent ) === JSON.stringify( content ) )
+        .then( stored => {
+
+            canGet = stored;
+            canStore = stored;
+            if ( !stored ) { return; }
+            return data.list()
+                .then( files => { canList = !!files.find( isTestFile ); } )
+                .then( () => data.trash( testName ) )
+                .then( () => data.load( testName ) )
+                .catch( err => { canDelete = err.code === 404; } );
+
+        } )
+        .then( () => ( { canList, canStore, canDelete, canGet } ) );
+
+}
+
 function initVerification( owner ) {
 
-    let canList = false;
-    let canStore = false;
-    let canDelete = false;
-    let canGet = false;
+    const fetchTestData = fetch( "/public/data/notshaka.json" ).then( res => res.json() );
+    const buildRepo = Data.inFolder( appName );
     const testName = `__temp_testing_${appName}`;
-    const isTestFile = f => f.name === testName;
-
-
-    return Data.inFolder( appName )
-        .then( data => Promise.resolve()
-
-                .then( () => data.save( testName, { "hello": "world" } ) )
-                .then( () => data.list() )
-                .then( files => {
-                    canList = true;
-                    canStore = !!files.find( isTestFile );
-                } )
-
-        ).then( () =>
-
-            verifications
-                .set( owner, { canList, canStore, canDelete, canGet } )
-                .get( owner )
-
-        );
+    return Promise.all( [ buildRepo, fetchTestData ] )
+        .then( ( [ repo, testData ] ) => verify( repo, testName, testData ) )
+        .then( verification => verifications.set( owner, verification ) )
+        .then( () => verifications.get( owner ) );
 
 }
 

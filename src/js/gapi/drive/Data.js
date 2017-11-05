@@ -107,8 +107,6 @@ function updateInFolder( folder, file, data ) {
 
 function saveInFolder( folder, name, data ) {
 
-    const headers = { "Content-Type": multiPartMimeType };
-    const path = uploadAPI;
     return findFileInFolder( folder, name )
         .then( maybeFile => maybeFile ?
             updateInFolder( folder, maybeFile, data ) :
@@ -118,8 +116,41 @@ function saveInFolder( folder, name, data ) {
 
 }
 
+function loadFromFolder( folder, name ) {
+
+    return findFileInFolder( folder, name )
+        .then( maybeFile => maybeFile ? maybeFile : Promise.reject( { code: 404 } ) )
+        .then( file => {
+
+            const path = `${filesAPI}/${file.id}`;
+            const params = { alt: "media" };
+            return request( { path, params } );
+
+        } )
+        .then( res => res.result );
+
+}
+
+function deleteFromFolder( folder, name ) {
+
+    return findFileInFolder( folder, name )
+        .then( file => {
+
+            const path = `${filesAPI}/${file.id}`;
+            const method = "DELETE";
+            return request( { method, path } );
+
+        } )
+        .catch( err => err.code === 404
+            ? Promise.resolve( { code: 404 } )
+            : Promise.reject( err )
+        );
+
+}
+
 function cleanUpError( err ) {
 
+    if ( err.code ) { return Promise.reject( err ); }
     if ( err.result ) {
 
         return Promise.reject( "WTF am i supposed to do with this? " + JSON.stringify( err.result, null, 3 ) );
@@ -175,11 +206,18 @@ export default class Data {
 
     }
 
+    // retrieves the specified data in a data file with the specified name
+    load( name ) {
+
+        return loadFromFolder( this.folder, name ).catch( cleanUpError );
+
+    }
+
     // deletes the data file with the specified name
     // if the data file is already gone, resolves with { code: 404 }
     trash( name ) {
 
-        return Promise.reject( new Error( "Not implemented" ) );
+        return deleteFromFolder( this.folder, name ).catch( cleanUpError );
 
     }
 

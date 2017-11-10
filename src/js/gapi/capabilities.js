@@ -45,7 +45,7 @@ function verifyDataCanDelete( data, testName ) {
 function deleteAll( data, testName ) {
 
     return data.list( testName )
-        .then( listing => console.log( "To delete", listing, testName ) || Promise.all( listing.map( x => data.permDelete( x ) ) ) );
+        .then( listing => Promise.all( listing.map( x => data.permDelete( x ) ) ) );
 
 }
 

@@ -7,25 +7,12 @@ const multiPartMimeType = `multipart/related; boundary=${boundary}`;
 const dataMimeType = "application/json";
 const JSONcontentType = "application/json; charset=UTF-8";
 
-const encodeName = window.z1 = name => name.replace(
-
-    /[-\!\~\*\'\(\)]/g,
-    x => "%" + x.charCodeAt(0).toString(16).toUpperCase()
-
-);
-const decodeName = window.z2 = name => name.replace(
-
-    /%(..)/g,
-    ( _, code ) => String.fromCharCode( Number.parseInt( code, 16 ) )
-
-);
-
 class FileSpec {
 
     constructor( { id, name } ) {
 
         this.id = id;
-        this.name = decodeName( name );
+        this.name = name;
 
     }
 
@@ -37,10 +24,12 @@ class FileSpec {
 
 }
 
+let counter = 0;
+
 function request( options ) {
 
     options = Object.assign( { method: "GET", path: filesAPI }, options );
-    console.log( "request:", options );
+    console.log( "GAPI request", ++counter, options );
     return new Promise( ( resolve, reject ) =>
 
         gapi.client.request( options ).then( resolve, reject )
@@ -70,16 +59,25 @@ function ensureFolder( name ) {
 
 }
 
+function dumbDownPrefix( prefix ) {
+
+    // API doesn't like dashes for some reason
+    const dashIndex = prefix.indexOf( "-" );
+    if ( ~dashIndex ) { prefix = prefix.substring( 0, dashIndex ); }
+    // API doesn't like more than ~20 characters for some reason
+    if ( prefix.length > 20 ) { prefix = prefix.substring( 0, 20 ); }
+    return prefix;
+
+}
 function listFilesInFolder( folder, maybePrefix ) {
 
-    maybePrefix = maybePrefix ? encodeName( maybePrefix ) : maybePrefix;
     let q = `mimeType='${dataMimeType}' and trashed=false`;
     let nameFilter = x => true;
     if ( maybePrefix ) {
 
-        const prefix = maybePrefix.length > 20 ? maybePrefix.substring( 0, 20 ) : maybePrefix;
-        nameFilter = maybePrefix.length > 20 ? x => x.name.indexOf( maybePrefix ) === 0 : nameFilter;
-        q = `name contains '${prefix}' and ${q}`;
+        const apiPrefix = dumbDownPrefix( maybePrefix );
+        if ( apiPrefix !== maybePrefix ) { nameFilter = x => x.name.indexOf( maybePrefix ) === 0; }
+        q = `name contains '${apiPrefix}' and ${q}`;
 
     }
     const pageSize = 1000;
@@ -93,9 +91,8 @@ function listFilesInFolder( folder, maybePrefix ) {
 function findFileInFolder( folder, maybeSpec ) {
 
     if( maybeSpec instanceof FileSpec ) { return Promise.resolve( maybeSpec ); }
-    const name = encodeName( maybeSpec );
     const { id } = folder || {};
-    const q = `name='${name}' and '${id}' in parents and mimeType='${dataMimeType}' and trashed=false`;
+    const q = `name='${maybeSpec}' and '${id}' in parents and mimeType='${dataMimeType}' and trashed=false`;
     const params = { q };
     return request( { params } )
         .then( res => res.result.files )
@@ -119,7 +116,6 @@ function multipart( ...parts ) {
 
 function createInFolder( folder, name, data ) {
 
-    name = encodeName( name );
     const method = "POST";
     const headers = { "Content-Type": multiPartMimeType };
     const params = { "uploadType": "multipart" };

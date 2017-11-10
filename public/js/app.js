@@ -852,7 +852,7 @@ function verifyDataCanDelete(data, testName) {
 function deleteAll(data, testName) {
 
     return data.list(testName).then(function (listing) {
-        return console.log("To delete", listing, testName) || Promise.all(listing.map(function (x) {
+        return Promise.all(listing.map(function (x) {
             return data.permDelete(x);
         }));
     });
@@ -1034,17 +1034,6 @@ var multiPartMimeType = "multipart/related; boundary=" + boundary;
 var dataMimeType = "application/json";
 var JSONcontentType = "application/json; charset=UTF-8";
 
-var encodeName = window.z1 = function (name) {
-    return name.replace(/[-\!\~\*\'\(\)]/g, function (x) {
-        return "%" + x.charCodeAt(0).toString(16).toUpperCase();
-    });
-};
-var decodeName = window.z2 = function (name) {
-    return name.replace(/%(..)/g, function (_, code) {
-        return String.fromCharCode(Number.parseInt(code, 16));
-    });
-};
-
 var FileSpec = function () {
     function FileSpec(_ref) {
         var id = _ref.id,
@@ -1053,7 +1042,7 @@ var FileSpec = function () {
         _classCallCheck(this, FileSpec);
 
         this.id = id;
-        this.name = decodeName(name);
+        this.name = name;
     }
 
     _createClass(FileSpec, null, [{
@@ -1067,10 +1056,12 @@ var FileSpec = function () {
     return FileSpec;
 }();
 
+var counter = 0;
+
 function request(options) {
 
     options = Object.assign({ method: "GET", path: filesAPI }, options);
-    console.log("request:", options);
+    console.log("GAPI request", ++counter, options);
     return new Promise(function (resolve, reject) {
         return gapi.client.request(options).then(resolve, reject);
     });
@@ -1097,20 +1088,34 @@ function ensureFolder(name) {
     }).then(FileSpec.build);
 }
 
+function dumbDownPrefix(prefix) {
+
+    // API doesn't like dashes for some reason
+    var dashIndex = prefix.indexOf("-");
+    if (~dashIndex) {
+        prefix = prefix.substring(0, dashIndex);
+    }
+    // API doesn't like more than ~20 characters for some reason
+    if (prefix.length > 20) {
+        prefix = prefix.substring(0, 20);
+    }
+    return prefix;
+}
 function listFilesInFolder(folder, maybePrefix) {
 
-    maybePrefix = maybePrefix ? encodeName(maybePrefix) : maybePrefix;
     var q = "mimeType='" + dataMimeType + "' and trashed=false";
     var nameFilter = function nameFilter(x) {
         return true;
     };
     if (maybePrefix) {
 
-        var prefix = maybePrefix.length > 20 ? maybePrefix.substring(0, 20) : maybePrefix;
-        nameFilter = maybePrefix.length > 20 ? function (x) {
-            return x.name.indexOf(maybePrefix) === 0;
-        } : nameFilter;
-        q = "name contains '" + prefix + "' and " + q;
+        var apiPrefix = dumbDownPrefix(maybePrefix);
+        if (apiPrefix !== maybePrefix) {
+            nameFilter = function nameFilter(x) {
+                return x.name.indexOf(maybePrefix) === 0;
+            };
+        }
+        q = "name contains '" + apiPrefix + "' and " + q;
     }
     var pageSize = 1000;
     var params = { q: q, pageSize: pageSize };
@@ -1126,12 +1131,11 @@ function findFileInFolder(folder, maybeSpec) {
     if (maybeSpec instanceof FileSpec) {
         return Promise.resolve(maybeSpec);
     }
-    var name = encodeName(maybeSpec);
 
     var _ref2 = folder || {},
         id = _ref2.id;
 
-    var q = "name='" + name + "' and '" + id + "' in parents and mimeType='" + dataMimeType + "' and trashed=false";
+    var q = "name='" + maybeSpec + "' and '" + id + "' in parents and mimeType='" + dataMimeType + "' and trashed=false";
     var params = { q: q };
     return request({ params: params }).then(function (res) {
         return res.result.files;
@@ -1159,7 +1163,6 @@ function multipart() {
 
 function createInFolder(folder, name, data) {
 
-    name = encodeName(name);
     var method = "POST";
     var headers = { "Content-Type": multiPartMimeType };
     var params = { "uploadType": "multipart" };

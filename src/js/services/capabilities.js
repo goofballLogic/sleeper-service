@@ -1,7 +1,16 @@
 import Service from "./service.js";
 
-const requiredFunctions = [ "clear", "verifyList", "verifyStore", "verifyGet", "verifyDelete" ];
 const chosenKey = "chosen-capabilities-provider";
+const requiredFunctions = [
+
+    "clear",
+    "verifyList",
+    "verifyStore",
+    "verifyGet",
+    "verifyDelete",
+    "verifyProjects"
+
+];
 
 export default class CapabilitiesService extends Service {
 
@@ -11,10 +20,15 @@ export default class CapabilitiesService extends Service {
 
     }
 
+    clear() {
+
+        return this.ensureProvider().then( p => p.clear() ).then( () => true );
+
+    }
+
     verifyStorage() {
 
         return this.ensureProvider()
-            .then( p => p.clear() )
             .then( p => Promise.all( [
 
                 p.verifyList(),
@@ -25,6 +39,21 @@ export default class CapabilitiesService extends Service {
             ] ).then( ( [ canList, canStore, canGet, canDelete ] ) =>
 
                 ( { canList, canStore, canGet, canDelete } )
+
+            ) );
+
+    }
+
+    verifyProjectRepo() {
+
+        return this.ensureProvider()
+            .then( p => Promise.all( [
+
+                p.verifyProjects()
+
+            ] ).then( ( [ canListProjects ] ) =>
+
+                ( { canListProjects } )
 
             ) );
 

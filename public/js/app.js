@@ -60,7 +60,7 @@
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 2);
+/******/ 	return __webpack_require__(__webpack_require__.s = 4);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -80,7 +80,7 @@ var _tinyEmitter = __webpack_require__(1);
 
 var _tinyEmitter2 = _interopRequireDefault(_tinyEmitter);
 
-var _localStore = __webpack_require__(4);
+var _localStore = __webpack_require__(6);
 
 var _localStore2 = _interopRequireDefault(_localStore);
 
@@ -238,15 +238,124 @@ module.exports = E;
 "use strict";
 
 
-var _identity = __webpack_require__(3);
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _providerBase = __webpack_require__(9);
+
+var _providerBase2 = _interopRequireDefault(_providerBase);
+
+var _config = __webpack_require__(3);
+
+var _config2 = _interopRequireDefault(_config);
+
+var _shared = __webpack_require__(10);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var loadFlag = false;
+var loadError = void 0;
+
+document.addEventListener("google-api-loaded", function handleAPILoaded() {
+
+    (0, _shared.init)(_config2.default.gapi).then(function () {
+        loadFlag = true;
+    }).catch(function (ex) {
+        loadError = ex;
+    });
+});
+
+function waitFor(condition, timeout, description) {
+
+    if (timeout <= 0) {
+        return Promise.reject("Timed out");
+    }
+    if (condition()) {
+        return Promise.resolve(true);
+    }
+    var newTimeout = timeout - 100;
+    return new Promise(function (resolve, reject) {
+        return setTimeout(function () {
+            return waitFor(condition, newTimeout).then(resolve, reject);
+        }, 100);
+    });
+}
+
+var Provider = function (_ProviderBase) {
+    _inherits(Provider, _ProviderBase);
+
+    function Provider(description) {
+        _classCallCheck(this, Provider);
+
+        return _possibleConstructorReturn(this, (Provider.__proto__ || Object.getPrototypeOf(Provider)).call(this, "gapi", description));
+    }
+
+    _createClass(Provider, [{
+        key: "status",
+        value: function status() {
+
+            return { loaded: loadFlag, loadError: loadError };
+        }
+    }, {
+        key: "waitForLoad",
+        value: function waitForLoad() {
+            var _this2 = this;
+
+            if (loadFlag) {
+                return Promise.resolve();
+            }
+            console.log("Provider loading...", this);
+            return waitFor(function () {
+                return loadFlag;
+            }, 5000).then(function () {
+
+                console.log("Provider loading complete", _this2);
+            });
+        }
+    }]);
+
+    return Provider;
+}(_providerBase2.default);
+
+exports.default = Provider;
+
+/***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = window["sleeper-service-config"];
+
+/***/ }),
+/* 4 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+var _identity = __webpack_require__(5);
 
 var _identity2 = _interopRequireDefault(_identity);
 
-var _capabilities = __webpack_require__(5);
+var _capabilities = __webpack_require__(7);
 
 var _capabilities2 = _interopRequireDefault(_capabilities);
 
-var _identity3 = __webpack_require__(6);
+var _identity3 = __webpack_require__(8);
 
 var _identity4 = _interopRequireDefault(_identity3);
 
@@ -267,7 +376,7 @@ document.addEventListener("locate-services", function (e) {
 });
 
 /***/ }),
-/* 3 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -341,7 +450,7 @@ var IdentityService = function (_Service) {
 exports.default = IdentityService;
 
 /***/ }),
-/* 4 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -353,7 +462,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.default = window.localStorage;
 
 /***/ }),
-/* 5 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -379,8 +488,8 @@ function _possibleConstructorReturn(self, call) { if (!self) { throw new Referen
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-var requiredFunctions = ["clear", "verifyList", "verifyStore", "verifyGet", "verifyDelete"];
 var chosenKey = "chosen-capabilities-provider";
+var requiredFunctions = ["clear", "verifyList", "verifyStore", "verifyGet", "verifyDelete", "verifyProjects"];
 
 var CapabilitiesService = function (_Service) {
     _inherits(CapabilitiesService, _Service);
@@ -392,12 +501,20 @@ var CapabilitiesService = function (_Service) {
     }
 
     _createClass(CapabilitiesService, [{
+        key: "clear",
+        value: function clear() {
+
+            return this.ensureProvider().then(function (p) {
+                return p.clear();
+            }).then(function () {
+                return true;
+            });
+        }
+    }, {
         key: "verifyStorage",
         value: function verifyStorage() {
 
             return this.ensureProvider().then(function (p) {
-                return p.clear();
-            }).then(function (p) {
                 return Promise.all([p.verifyList(), p.verifyStore(), p.verifyGet(), p.verifyDelete()]).then(function (_ref) {
                     var _ref2 = _slicedToArray(_ref, 4),
                         canList = _ref2[0],
@@ -409,6 +526,19 @@ var CapabilitiesService = function (_Service) {
                 });
             });
         }
+    }, {
+        key: "verifyProjectRepo",
+        value: function verifyProjectRepo() {
+
+            return this.ensureProvider().then(function (p) {
+                return Promise.all([p.verifyProjects()]).then(function (_ref3) {
+                    var _ref4 = _slicedToArray(_ref3, 1),
+                        canListProjects = _ref4[0];
+
+                    return { canListProjects: canListProjects };
+                });
+            });
+        }
     }]);
 
     return CapabilitiesService;
@@ -417,7 +547,7 @@ var CapabilitiesService = function (_Service) {
 exports.default = CapabilitiesService;
 
 /***/ }),
-/* 6 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -429,7 +559,7 @@ Object.defineProperty(exports, "__esModule", {
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _provider = __webpack_require__(7);
+var _provider = __webpack_require__(2);
 
 var _provider2 = _interopRequireDefault(_provider);
 
@@ -506,75 +636,7 @@ var GoogleIdentity = function (_Provider) {
 exports.default = new GoogleIdentity();
 
 /***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-    value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _providerBase = __webpack_require__(8);
-
-var _providerBase2 = _interopRequireDefault(_providerBase);
-
-var _config = __webpack_require__(9);
-
-var _config2 = _interopRequireDefault(_config);
-
-var _shared = __webpack_require__(10);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-var loadFlag = false;
-var loadError = void 0;
-
-console.log("registering google-api-loaded listener");
-
-document.addEventListener("google-api-loaded", function handleAPILoaded() {
-
-    console.log("Google API loaded event");
-    (0, _shared.init)(_config2.default.gapi).then(function () {
-        loadFlag = true;
-    }).catch(function (ex) {
-        loadError = ex;
-    });
-});
-
-var Provider = function (_ProviderBase) {
-    _inherits(Provider, _ProviderBase);
-
-    function Provider(description) {
-        _classCallCheck(this, Provider);
-
-        return _possibleConstructorReturn(this, (Provider.__proto__ || Object.getPrototypeOf(Provider)).call(this, "gapi", description));
-    }
-
-    _createClass(Provider, [{
-        key: "status",
-        value: function status() {
-
-            return { loaded: loadFlag, loadError: loadError };
-        }
-    }]);
-
-    return Provider;
-}(_providerBase2.default);
-
-exports.default = Provider;
-
-/***/ }),
-/* 8 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -645,18 +707,6 @@ var Provider = function (_EventEmitter) {
 exports.default = Provider;
 
 /***/ }),
-/* 9 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = window["sleeper-service-config"];
-
-/***/ }),
 /* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -717,7 +767,7 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }(); /* global fetch */
 
-var _provider = __webpack_require__(7);
+var _provider = __webpack_require__(2);
 
 var _provider2 = _interopRequireDefault(_provider);
 
@@ -725,7 +775,11 @@ var _Data = __webpack_require__(12);
 
 var _Data2 = _interopRequireDefault(_Data);
 
-var _config = __webpack_require__(9);
+var _Repo = __webpack_require__(13);
+
+var _Repo2 = _interopRequireDefault(_Repo);
+
+var _config = __webpack_require__(3);
 
 var _config2 = _interopRequireDefault(_config);
 
@@ -739,67 +793,157 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 
 var appName = _config2.default.appName;
 
-var verifications = new WeakMap();
+var storageVerifications = new WeakMap();
 
-function verify(data, testName, testContent) {
+var sameItems = function sameItems(as, bs) {
+    return as.length === bs.length && as.every(function (x) {
+        return ~bs.indexOf(x);
+    });
+};
+var sameJSON = function sameJSON(a, b) {
+    return JSON.stringify(a) === JSON.stringify(b);
+};
+var postfix = function postfix(x, postfixes) {
+    return postfixes.map(function (p) {
+        return x + "__" + p;
+    });
+};
 
-    console.log(arguments);
-    var isTestFile = function isTestFile(f) {
-        return f.name === testName;
-    };
-    var canList = undefined;
-    var canStore = undefined;
-    var canDelete = undefined;
-    var canGet = undefined;
+function verifyCanStore(data, testName, testContent) {
+
     return data.save(testName, testContent).then(function () {
         return data.load(testName);
     }).then(function (content) {
-        return JSON.stringify(testContent) === JSON.stringify(content);
-    }).then(function (stored) {
-
-        canGet = stored;
-        canStore = stored;
-        if (!stored) {
-            return;
-        }
-        return data.list().then(function (files) {
-            canList = !!files.find(isTestFile);
-        }).then(function () {
-            return data.trash(testName);
-        }).then(function () {
-            return data.load(testName);
-        }).catch(function (err) {
-            canDelete = err.code === 404;
-        });
-    }).then(function () {
-        return { canList: canList, canStore: canStore, canDelete: canDelete, canGet: canGet };
+        return sameJSON(testContent, content);
     });
 }
 
-function initVerification(owner) {
+function verifyDataCanList(data, testName) {
+
+    var listTestName = testName + "__list";
+    var listTestNames = postfix(listTestName, [1, 2, 3]);
+    return data.list(listTestName).then(function (listing) {
+        return Promise.all(listing.map(function (x) {
+            return data.permDelete(x);
+        }));
+    }).then(function () {
+        return Promise.all(listTestNames.map(function (x) {
+            return data.save(x);
+        }));
+    }).then(function () {
+        return data.list(listTestName);
+    }).then(function (listing) {
+        return sameItems(listing, listTestNames);
+    });
+}
+
+function verifyDataCanDelete(data, testName) {
+
+    var deleteTestName = testName + "__delete";
+    return data.save(deleteTestName, "stuff").then(function () {
+        return data.permDelete(deleteTestName);
+    }).then(function () {
+        return data.load(deleteTestName);
+    }).catch(function (err) {
+        return Promise.resolve(err.code === 404);
+    });
+}
+
+function deleteAll(data, testName) {
+
+    return data.list(testName).then(function (listing) {
+        return console.log("To delete", listing, testName) || Promise.all(listing.map(function (x) {
+            return data.permDelete(x);
+        }));
+    });
+}
+
+function verifyData(data, testName, testContent) {
+
+    testName += "__data";
+    var result = { canList: undefined, canStore: undefined, canDelete: undefined, canGet: undefined };
+    return verifyCanStore(data, testName, testContent).then(function (canStore) {
+
+        result.canStore = result.canGet = canStore;
+        if (!canStore) {
+            return;
+        }
+        return Promise.all([verifyDataCanList(data, testName), verifyDataCanDelete(data, testName)]);
+    }).then(function () {
+        return result;
+    });
+}
+
+function verifyRepo(repo, testName) {
+
+    testName += "__repo";
+    var result = { canListProjects: undefined };
+    var testProjects = postfix(testName, [1, 2]);
+    return Promise.all(testProjects.map(function (x) {
+        return repo.trashProject(x);
+    })).then(function () {
+        return Promise.all(testProjects.map(function (x) {
+            return repo.createProject(x);
+        }));
+    }).then(function () {
+        return repo.listProjects();
+    }).then(function (listing) {
+
+        result.canListProjects = testProjects.every(function (testProject) {
+            return ~listing.indexOf(testProject);
+        });
+    }).catch(function (ex) {
+        result.ex = ex;
+    }).then(function () {
+        return result;
+    });
+}
+
+function verifyStorage(data, repo, testName, testContent) {
+
+    return Promise.all([verifyData(data, testName, testContent), verifyRepo(repo, testName)]).then(function (_ref) {
+        var _ref2 = _slicedToArray(_ref, 2),
+            dataResults = _ref2[0],
+            repoResults = _ref2[1];
+
+        deleteAll(data, testName).catch(function (err) {
+            return console.error("Cleaning up after self test", err);
+        });
+        return { data: dataResults, repo: repoResults };
+    });
+}
+
+function initStorageVerifications(owner) {
 
     var fetchTestData = fetch("/public/data/notshaka.json").then(function (res) {
         return res.json();
     });
-    var buildRepo = _Data2.default.inFolder(appName);
+    var buildData = _Data2.default.inFolder(appName);
+    var buildRepo = buildData.then(function (d) {
+        return new _Repo2.default(d);
+    });
     var testName = "__temp_testing_" + appName;
-    return Promise.all([buildRepo, fetchTestData]).then(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            repo = _ref2[0],
-            testData = _ref2[1];
+    console.log("Verify all storage...", owner);
+    return Promise.all([buildData, buildRepo, fetchTestData]).then(function (_ref3) {
+        var _ref4 = _slicedToArray(_ref3, 3),
+            data = _ref4[0],
+            repo = _ref4[1],
+            testData = _ref4[2];
 
-        return verify(repo, testName, testData);
+        return verifyStorage(data, repo, testName, testData);
     }).then(function (verification) {
-        return verifications.set(owner, verification);
+        return storageVerifications.set(owner, verification);
     }).then(function () {
-        return verifications.get(owner);
+
+        console.log("Verify all storage complete", owner);
+        return storageVerifications.get(owner);
     });
 }
 
-function verifyAll(owner) {
+function verifyAllStorage(owner) {
 
-    return Promise.resolve().then(function () {
-        return verifications.get(owner) || verifications.set(owner, initVerification(owner)).get(owner);
+    return owner.waitForLoad().then(function () {
+        return storageVerifications.get(owner) || storageVerifications.set(owner, initStorageVerifications(owner)).get(owner);
     });
 }
 
@@ -815,40 +959,48 @@ var GoogleCapabilities = function (_Provider) {
     _createClass(GoogleCapabilities, [{
         key: "clear",
         value: function clear() {
-            var _this2 = this;
 
-            return Promise.resolve().then(function () {
-                return verifications.delete(_this2);
-            }).then(function () {
-                return _this2;
-            });
+            storageVerifications.delete(this);
+            return Promise.resolve();
         }
     }, {
         key: "verifyList",
         value: function verifyList() {
-            return verifyAll(this).then(function (v) {
-                return v && v.canList;
+            return verifyAllStorage(this).then(function (_ref5) {
+                var data = _ref5.data;
+                return !!data.canList;
             });
         }
     }, {
         key: "verifyStore",
         value: function verifyStore() {
-            return verifyAll(this).then(function (v) {
-                return v && v.canStore;
+            return verifyAllStorage(this).then(function (_ref6) {
+                var data = _ref6.data;
+                return !!data.canStore;
             });
         }
     }, {
         key: "verifyGet",
         value: function verifyGet() {
-            return verifyAll(this).then(function (v) {
-                return v && v.canGet;
+            return verifyAllStorage(this).then(function (_ref7) {
+                var data = _ref7.data;
+                return !!data.canGet;
             });
         }
     }, {
         key: "verifyDelete",
         value: function verifyDelete() {
-            return verifyAll(this).then(function (v) {
-                return v && v.canDelete;
+            return verifyAllStorage(this).then(function (_ref8) {
+                var data = _ref8.data;
+                return !!data.canDelete;
+            });
+        }
+    }, {
+        key: "verifyProjects",
+        value: function verifyProjects() {
+            return verifyAllStorage(this).then(function (_ref9) {
+                var repo = _ref9.repo;
+                return console.log(repo) || !!repo.canListProjects;
             });
         }
     }]);
@@ -882,6 +1034,39 @@ var multiPartMimeType = "multipart/related; boundary=" + boundary;
 var dataMimeType = "application/json";
 var JSONcontentType = "application/json; charset=UTF-8";
 
+var encodeName = window.z1 = function (name) {
+    return name.replace(/[-\!\~\*\'\(\)]/g, function (x) {
+        return "%" + x.charCodeAt(0).toString(16).toUpperCase();
+    });
+};
+var decodeName = window.z2 = function (name) {
+    return name.replace(/%(..)/g, function (_, code) {
+        return String.fromCharCode(Number.parseInt(code, 16));
+    });
+};
+
+var FileSpec = function () {
+    function FileSpec(_ref) {
+        var id = _ref.id,
+            name = _ref.name;
+
+        _classCallCheck(this, FileSpec);
+
+        this.id = id;
+        this.name = decodeName(name);
+    }
+
+    _createClass(FileSpec, null, [{
+        key: "build",
+        value: function build(thing) {
+
+            return new FileSpec(thing);
+        }
+    }]);
+
+    return FileSpec;
+}();
+
 function request(options) {
 
     options = Object.assign({ method: "GET", path: filesAPI }, options);
@@ -899,14 +1084,6 @@ function createFolder(name) {
     return request({ method: method, body: body });
 }
 
-function asSpec(thing) {
-    var _ref = thing || {},
-        id = _ref.id,
-        name = _ref.name;
-
-    return { id: id, name: name };
-}
-
 function ensureFolder(name) {
 
     var q = "name='" + name + "' and mimeType='" + folderMimeType + "' and trashed=false";
@@ -917,21 +1094,40 @@ function ensureFolder(name) {
         return files.length ? files[0] : null;
     }).then(function (maybeFolder) {
         return maybeFolder || createFolder(name);
-    }).then(asSpec);
+    }).then(FileSpec.build);
 }
 
-function listFilesInFolder(folder) {
+function listFilesInFolder(folder, maybePrefix) {
 
+    maybePrefix = maybePrefix ? encodeName(maybePrefix) : maybePrefix;
     var q = "mimeType='" + dataMimeType + "' and trashed=false";
-    var params = { q: q };
+    var nameFilter = function nameFilter(x) {
+        return true;
+    };
+    if (maybePrefix) {
+
+        var prefix = maybePrefix.length > 20 ? maybePrefix.substring(0, 20) : maybePrefix;
+        nameFilter = maybePrefix.length > 20 ? function (x) {
+            return x.name.indexOf(maybePrefix) === 0;
+        } : nameFilter;
+        q = "name contains '" + prefix + "' and " + q;
+    }
+    var pageSize = 1000;
+    var params = { q: q, pageSize: pageSize };
     return request({ params: params }).then(function (res) {
         return res.result.files;
     }).then(function (files) {
-        return files.map(asSpec);
+        return files.filter(nameFilter).map(FileSpec.build);
     });
 }
 
-function findFileInFolder(folder, name) {
+function findFileInFolder(folder, maybeSpec) {
+
+    if (maybeSpec instanceof FileSpec) {
+        return Promise.resolve(maybeSpec);
+    }
+    var name = encodeName(maybeSpec);
+
     var _ref2 = folder || {},
         id = _ref2.id;
 
@@ -940,7 +1136,7 @@ function findFileInFolder(folder, name) {
     return request({ params: params }).then(function (res) {
         return res.result.files;
     }).then(function (files) {
-        return files.length ? asSpec(files[0]) : null;
+        return files.length ? FileSpec.build(files[0]) : null;
     });
 }
 
@@ -963,6 +1159,7 @@ function multipart() {
 
 function createInFolder(folder, name, data) {
 
+    name = encodeName(name);
     var method = "POST";
     var headers = { "Content-Type": multiPartMimeType };
     var params = { "uploadType": "multipart" };
@@ -987,7 +1184,7 @@ function saveInFolder(folder, name, data) {
     return findFileInFolder(folder, name).then(function (maybeFile) {
         return maybeFile ? updateInFolder(folder, maybeFile, data) : createInFolder(folder, name, data);
     }).then(function (res) {
-        return asSpec(res.result);
+        return FileSpec.build(res.result);
     });
 }
 
@@ -1005,9 +1202,9 @@ function loadFromFolder(folder, name) {
     });
 }
 
-function deleteFromFolder(folder, name) {
+function deleteFromFolder(folder, maybeSpec) {
 
-    return findFileInFolder(folder, name).then(function (file) {
+    return findFileInFolder(folder, maybeSpec).then(function (file) {
 
         var path = filesAPI + "/" + file.id;
         var method = "DELETE";
@@ -1027,6 +1224,7 @@ function cleanUpError(err) {
         return Promise.reject("WTF am i supposed to do with this? " + JSON.stringify(err.result, null, 3));
     } else {
 
+        console.error(err);
         return Promise.reject({
             code: err.status || 500,
             message: err.body || err.statusText || "Unknown error",
@@ -1069,11 +1267,7 @@ var Data = function () {
         key: "list",
         value: function list(maybePrefix) {
 
-            if (maybePrefix) {
-
-                return Promise.reject(new Error("Not implemented"));
-            }
-            return listFilesInFolder(this.folder).catch(cleanUpError);
+            return listFilesInFolder(this.folder, maybePrefix).catch(cleanUpError);
         }
 
         // saves the specified data in a data file with the specified name
@@ -1098,10 +1292,10 @@ var Data = function () {
         // if the data file is already gone, resolves with { code: 404 }
 
     }, {
-        key: "trash",
-        value: function trash(name) {
+        key: "permDelete",
+        value: function permDelete(maybeSpec) {
 
-            return deleteFromFolder(this.folder, name).catch(cleanUpError);
+            return deleteFromFolder(this.folder, maybeSpec).catch(cleanUpError);
         }
     }]);
 
@@ -1109,6 +1303,55 @@ var Data = function () {
 }();
 
 exports.default = Data;
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var Repo = function () {
+    function Repo(data) {
+        _classCallCheck(this, Repo);
+
+        this.data = data;
+    }
+
+    _createClass(Repo, [{
+        key: "createProject",
+        value: function createProject(name) {
+
+            var project = [];
+            console.log("Creating", name);
+            return this.data.save(name + "_project.json", project, { overwrite: false });
+        }
+    }, {
+        key: "trashProject",
+        value: function trashProject(name) {}
+    }, {
+        key: "listProjects",
+        value: function listProjects() {
+
+            return this.data.list().then(function (something) {
+
+                console.log("Something", something);
+            });
+        }
+    }]);
+
+    return Repo;
+}();
+
+exports.default = Repo;
 
 /***/ })
 /******/ ]);

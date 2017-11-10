@@ -7,10 +7,40 @@ const multiPartMimeType = `multipart/related; boundary=${boundary}`;
 const dataMimeType = "application/json";
 const JSONcontentType = "application/json; charset=UTF-8";
 
+const encodeName = window.z1 = name => name.replace(
+
+    /[-\!\~\*\'\(\)]/g,
+    x => "%" + x.charCodeAt(0).toString(16).toUpperCase()
+
+);
+const decodeName = window.z2 = name => name.replace(
+
+    /%(..)/g,
+    ( _, code ) => String.fromCharCode( Number.parseInt( code, 16 ) )
+
+);
+
+class FileSpec {
+
+    constructor( { id, name } ) {
+
+        this.id = id;
+        this.name = decodeName( name );
+
+    }
+
+    static build( thing ) {
+
+        return new FileSpec( thing );
+
+    }
+
+}
+
 function request( options ) {
 
     options = Object.assign( { method: "GET", path: filesAPI }, options );
-console.log( "request:", options );
+    console.log( "request:", options );
     return new Promise( ( resolve, reject ) =>
 
         gapi.client.request( options ).then( resolve, reject )
@@ -28,13 +58,6 @@ function createFolder( name ) {
 
 }
 
-function asSpec( thing ) {
-
-    const { id, name } = thing || {};
-    return { id, name };
-
-}
-
 function ensureFolder( name ) {
 
     const q = `name='${name}' and mimeType='${folderMimeType}' and trashed=false`;
@@ -43,28 +66,40 @@ function ensureFolder( name ) {
         .then( res => res.result.files )
         .then( files => files.length ? files[ 0 ] : null )
         .then( maybeFolder => maybeFolder || createFolder( name ) )
-        .then( asSpec );
+        .then( FileSpec.build );
 
 }
 
-function listFilesInFolder( folder ) {
+function listFilesInFolder( folder, maybePrefix ) {
 
-    const q = `mimeType='${dataMimeType}' and trashed=false`;
-    const params = { q };
+    maybePrefix = maybePrefix ? encodeName( maybePrefix ) : maybePrefix;
+    let q = `mimeType='${dataMimeType}' and trashed=false`;
+    let nameFilter = x => true;
+    if ( maybePrefix ) {
+
+        const prefix = maybePrefix.length > 20 ? maybePrefix.substring( 0, 20 ) : maybePrefix;
+        nameFilter = maybePrefix.length > 20 ? x => x.name.indexOf( maybePrefix ) === 0 : nameFilter;
+        q = `name contains '${prefix}' and ${q}`;
+
+    }
+    const pageSize = 1000;
+    const params = { q, pageSize };
     return request( { params } )
         .then( res => res.result.files )
-        .then( files => files.map( asSpec ) );
+        .then( files => files.filter( nameFilter ).map( FileSpec.build ) );
 
 }
 
-function findFileInFolder( folder, name ) {
+function findFileInFolder( folder, maybeSpec ) {
 
+    if( maybeSpec instanceof FileSpec ) { return Promise.resolve( maybeSpec ); }
+    const name = encodeName( maybeSpec );
     const { id } = folder || {};
-    const q = `name='${name}' and '${id}' in parents and mimeType='${dataMimeType}' and trashed=false`
+    const q = `name='${name}' and '${id}' in parents and mimeType='${dataMimeType}' and trashed=false`;
     const params = { q };
     return request( { params } )
         .then( res => res.result.files )
-        .then( files => files.length ? asSpec( files[ 0 ] ) : null );
+        .then( files => files.length ? FileSpec.build( files[ 0 ] ) : null );
 
 }
 
@@ -84,6 +119,7 @@ function multipart( ...parts ) {
 
 function createInFolder( folder, name, data ) {
 
+    name = encodeName( name );
     const method = "POST";
     const headers = { "Content-Type": multiPartMimeType };
     const params = { "uploadType": "multipart" };
@@ -112,7 +148,7 @@ function saveInFolder( folder, name, data ) {
             updateInFolder( folder, maybeFile, data ) :
             createInFolder( folder, name, data )
         )
-        .then( res => asSpec( res.result ) );
+        .then( res => FileSpec.build( res.result ) );
 
 }
 
@@ -131,9 +167,9 @@ function loadFromFolder( folder, name ) {
 
 }
 
-function deleteFromFolder( folder, name ) {
+function deleteFromFolder( folder, maybeSpec ) {
 
-    return findFileInFolder( folder, name )
+    return findFileInFolder( folder, maybeSpec )
         .then( file => {
 
             const path = `${filesAPI}/${file.id}`;
@@ -157,6 +193,7 @@ function cleanUpError( err ) {
 
     } else {
 
+        console.error( err );
         return Promise.reject( {
             code: err.status || 500,
             message: err.body || err.statusText || "Unknown error",
@@ -190,12 +227,7 @@ export default class Data {
     // if maybePrefix is specified, only files with the specified prefix are returned
     list( maybePrefix ) {
 
-        if ( maybePrefix ) {
-
-            return Promise.reject( new Error( "Not implemented" ) );
-
-        }
-        return listFilesInFolder( this.folder ).catch( cleanUpError );
+        return listFilesInFolder( this.folder, maybePrefix ).catch( cleanUpError );
 
     }
 
@@ -215,9 +247,9 @@ export default class Data {
 
     // deletes the data file with the specified name
     // if the data file is already gone, resolves with { code: 404 }
-    trash( name ) {
+    permDelete( maybeSpec ) {
 
-        return deleteFromFolder( this.folder, name ).catch( cleanUpError );
+        return deleteFromFolder( this.folder, maybeSpec ).catch( cleanUpError );
 
     }
 

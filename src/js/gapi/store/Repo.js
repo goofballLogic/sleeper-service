@@ -20,7 +20,7 @@ export default class Repo {
 
     listProjects() {
 
-        return this.data.list().then( something => {
+        return this.data.list().then( ( something ) => {
 
             console.log( "Something", something );
 

@@ -99,7 +99,7 @@ function findProvider(owner) {
 
     var chosenKey = chosenKeys.get(owner);
     var chosen = _localStore2.default.getItem(chosenKey);
-    owner.provider = _providers.get(owner).find(function (x) {
+    return _providers.get(owner).find(function (x) {
         return x.key === chosen;
     });
 }
@@ -117,7 +117,7 @@ var Service = function (_EventEmitter) {
         });
         _providers.set(_this, availableProviders);
         chosenKeys.set(_this, chosenKey);
-        findProvider(_this);
+        _this.provider = findProvider(_this);
 
         return _this;
     }
@@ -338,6 +338,7 @@ exports.default = Provider;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+/* global window */
 exports.default = window["sleeper-service-config"];
 
 /***/ }),
@@ -459,6 +460,7 @@ exports.default = IdentityService;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+/* global window */
 exports.default = window.localStorage;
 
 /***/ }),
@@ -522,7 +524,14 @@ var CapabilitiesService = function (_Service) {
                         canGet = _ref2[2],
                         canDelete = _ref2[3];
 
-                    return { canList: canList, canStore: canStore, canGet: canGet, canDelete: canDelete };
+                    return {
+
+                        canList: canList,
+                        canStore: canStore,
+                        canGet: canGet,
+                        canDelete: canDelete
+
+                    };
                 });
             });
         }
@@ -809,13 +818,63 @@ var postfix = function postfix(x, postfixes) {
     });
 };
 
+function expect409Error(err) {
+
+    if (err.code !== 409) {
+
+        throw new Error("Expected a 409 rejection of non-overwrite request, but got " + err);
+    }
+}
+
+function promiseAllTruthy(promises) {
+
+    return Promise.all(promises.map(function (promise) {
+        return promise.catch(function (ex) {
+            return console.error(ex);
+        });
+    } // returns non-truthy
+
+    )).then(function (results) {
+
+        var fails = results.map(function (x, i) {
+            return x ? null : promises[i];
+        }).filter(function (x) {
+            return x;
+        });
+        return fails.length ? Promise.reject(fails) : Promise.resolve();
+    });
+}
+
 function verifyCanStore(data, testName, testContent) {
 
-    return data.save(testName, testContent).then(function () {
+    var overwriteTestName = testName + "-preexisting";
+    return promiseAllTruthy([data.save(testName, testContent).then(function () {
         return data.load(testName);
     }).then(function (content) {
         return sameJSON(testContent, content);
+    }), data.save(overwriteTestName, 42).then(function () {
+        return data.save(overwriteTestName, 42, { overwrite: false });
+    }).then(function () {
+        throw new Error("Failed to reject non-overwrite request");
+    }).catch(expect409Error).then(function () {
+        return true;
+    })]).catch(function (ex) {
+        return false;
     });
+}
+
+function deleteListing(data, listing) {
+
+    return promiseAllTruthy(listing.map(function (x) {
+        return data.permDelete(x);
+    }));
+}
+
+function generateDummies(data, names) {
+
+    return promiseAllTruthy(names.map(function (x) {
+        return data.save(x, "hello, dummy");
+    }));
 }
 
 function verifyDataCanList(data, testName) {
@@ -823,21 +882,15 @@ function verifyDataCanList(data, testName) {
     var listTestName = testName + "__list";
     var listTestNames = postfix(listTestName, [1, 2, 3]);
     return data.list(listTestName).then(function (listing) {
-        return Promise.all(listing.map(function (x) {
-            return data.permDelete(x);
-        }));
+        return deleteListing(data, listing);
     }).then(function () {
-        return Promise.all(listTestNames.map(function (x) {
-            return data.save(x);
-        }));
+        return generateDummies(data, listTestNames);
     }).then(function () {
         return data.list(listTestName);
     }).then(function (listing) {
-        return listing.map(function (x) {
+        return sameItems(listing.map(function (x) {
             return x.name;
-        });
-    }).then(function (listingNames) {
-        return sameItems(listingNames, listTestNames);
+        }), listTestNames);
     });
 }
 
@@ -856,7 +909,7 @@ function verifyDataCanDelete(data, testName) {
 function deleteAll(data, testName) {
 
     return data.list(testName).then(function (listing) {
-        return Promise.all(listing.map(function (x) {
+        return promiseAllTruthy(listing.map(function (x) {
             return data.permDelete(x);
         }));
     });
@@ -915,15 +968,23 @@ function verifyRepo(repo, testName) {
 
 function verifyStorage(data, repo, testName, testContent) {
 
+    function cleanup() {
+
+        deleteAll(data, testName).catch(function (err) {
+            return console.error("Cleaning up after self test", err);
+        });
+    }
     return Promise.all([verifyData(data, testName, testContent), verifyRepo(repo, testName)]).then(function (_ref3) {
         var _ref4 = _slicedToArray(_ref3, 2),
             dataResults = _ref4[0],
             repoResults = _ref4[1];
 
-        deleteAll(data, testName).catch(function (err) {
-            return console.error("Cleaning up after self test", err);
-        });
+        cleanup();
         return { data: dataResults, repo: repoResults };
+    }).catch(function (ex) {
+
+        cleanup();
+        throw ex;
     });
 }
 

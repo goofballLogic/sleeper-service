@@ -13,7 +13,7 @@ export default class Provider extends EventEmitter {
 
     verifyInterface( functions ) {
 
-        functions.forEach( func => {
+        functions.forEach( ( func ) => {
 
             const maybeFunction = this[ func ];
             if ( typeof maybeFunction !== "function" ) {

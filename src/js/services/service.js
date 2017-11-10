@@ -8,7 +8,7 @@ function findProvider( owner ) {
 
     const chosenKey = chosenKeys.get( owner );
     const chosen = local.getItem( chosenKey );
-    owner.provider = providers.get( owner ).find( x => x.key === chosen );
+    return providers.get( owner ).find( x => x.key === chosen );
 
 }
 
@@ -20,7 +20,7 @@ export default class Service extends EventEmitter {
         availableProviders.forEach( p => p.verifyInterface( requiredFunctions ) );
         providers.set( this, availableProviders );
         chosenKeys.set( this, chosenKey );
-        findProvider( this );
+        this.provider = findProvider( this );
 
     }
 

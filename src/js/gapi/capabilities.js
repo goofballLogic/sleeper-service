@@ -12,11 +12,59 @@ const sameItems = ( as, bs ) => as.length === bs.length && as.every( x => ~bs.in
 const sameJSON = ( a, b ) => JSON.stringify( a ) === JSON.stringify( b );
 const postfix = ( x, postfixes ) => postfixes.map( p => `${x}__${p}` );
 
+function expect409Error( err ) {
+
+    if ( err.code !== 409 ) {
+
+        throw new Error( `Expected a 409 rejection of non-overwrite request, but got ${err}` );
+
+    }
+
+}
+
+function promiseAllTruthy( promises ) {
+
+    return Promise.all( promises.map(
+
+        promise => promise.catch( ex => console.error( ex ) ) // returns non-truthy
+
+    ) ).then( results => {
+
+        const fails = results.map( ( x, i ) => x ? null : promises[ i ] ).filter( x => x );
+        return fails.length ? Promise.reject( fails ) : Promise.resolve();
+
+    } );
+
+}
+
 function verifyCanStore( data, testName, testContent ) {
 
-    return data.save( testName, testContent )
-        .then( () => data.load( testName ) )
-        .then( content => sameJSON( testContent, content ) );
+    const overwriteTestName = `${testName}-preexisting`;
+    return promiseAllTruthy( [
+
+        data.save( testName, testContent )
+            .then( () => data.load( testName ) )
+            .then( content => sameJSON( testContent, content ) ),
+
+        data.save( overwriteTestName, 42 )
+            .then( () => data.save( overwriteTestName, 42, { overwrite: false } ) )
+            .then( () => { throw new Error( "Failed to reject non-overwrite request" ); } )
+            .catch( expect409Error )
+            .then( () => true )
+
+    ] ).catch( ex => false );
+
+}
+
+function deleteListing( data, listing ) {
+
+    return promiseAllTruthy( listing.map( x => data.permDelete( x ) ) );
+
+}
+
+function generateDummies( data, names ) {
+
+    return promiseAllTruthy( names.map( x => data.save( x, "hello, dummy" ) ) );
 
 }
 
@@ -25,11 +73,10 @@ function verifyDataCanList( data, testName ) {
     const listTestName = `${testName}__list`;
     const listTestNames = postfix( listTestName, [ 1, 2, 3 ] );
     return data.list( listTestName )
-        .then( listing => Promise.all( listing.map( x => data.permDelete( x ) ) ) )
-        .then( () => Promise.all( listTestNames.map( x => data.save( x ) ) ) )
+        .then( listing => deleteListing( data, listing )  )
+        .then( () => generateDummies( data, listTestNames ) )
         .then( () => data.list( listTestName ) )
-        .then( listing => listing.map( x => x.name ) )
-        .then( listingNames => sameItems( listingNames, listTestNames ) );
+        .then( listing => sameItems( listing.map( x => x.name ), listTestNames ) );
 
 }
 
@@ -37,9 +84,7 @@ function verifyDataCanDelete( data, testName ) {
 
     const deleteTestName = `${testName}__delete`;
     return data.save( deleteTestName, "stuff" )
-        .then( fileSpec => data.permDelete( fileSpec )
-            .then( () => data.load( fileSpec ) )
-        )
+        .then( fileSpec => data.permDelete( fileSpec ).then( () => data.load( fileSpec ) ) )
         .catch( err => console.log( err ) || Promise.resolve( err.code === 404 ) );
 
 }
@@ -47,7 +92,7 @@ function verifyDataCanDelete( data, testName ) {
 function deleteAll( data, testName ) {
 
     return data.list( testName )
-        .then( listing => Promise.all( listing.map( x => data.permDelete( x ) ) ) );
+        .then( listing => promiseAllTruthy( listing.map( x => data.permDelete( x ) ) ) );
 
 }
 
@@ -104,6 +149,11 @@ console.log( listing );
 
 function verifyStorage( data, repo, testName, testContent ) {
 
+    function cleanup() {
+
+        deleteAll( data, testName ).catch( err => console.error( "Cleaning up after self test", err ) );
+
+    }
     return Promise.all( [
 
         verifyData( data, testName, testContent ),
@@ -111,8 +161,13 @@ function verifyStorage( data, repo, testName, testContent ) {
 
     ] ).then( ( [ dataResults, repoResults ] ) => {
 
-        deleteAll( data, testName ).catch( err => console.error( "Cleaning up after self test", err ) );
+        cleanup();
         return { data: dataResults, repo: repoResults };
+
+    } ).catch( ex => {
+
+        cleanup();
+        throw ex;
 
     } );
 

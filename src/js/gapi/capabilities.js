@@ -1,8 +1,8 @@
 /* global fetch */
 
 import Provider from "./provider.js";
-import Data from "./drive/Data.js";
-import Repo from "./Repo.js";
+import Data from "./store/Data.js";
+import Repo from "./store/Repo.js";
 import config from "../config.js";
 
 const { appName } = config;
@@ -28,7 +28,8 @@ function verifyDataCanList( data, testName ) {
         .then( listing => Promise.all( listing.map( x => data.permDelete( x ) ) ) )
         .then( () => Promise.all( listTestNames.map( x => data.save( x ) ) ) )
         .then( () => data.list( listTestName ) )
-        .then( listing => sameItems( listing, listTestNames ) );
+        .then( listing => listing.map( x => x.name ) )
+        .then( listingNames => sameItems( listingNames, listTestNames ) );
 
 }
 
@@ -36,9 +37,10 @@ function verifyDataCanDelete( data, testName ) {
 
     const deleteTestName = `${testName}__delete`;
     return data.save( deleteTestName, "stuff" )
-        .then( () => data.permDelete( deleteTestName ) )
-        .then( () => data.load( deleteTestName ) )
-        .catch( err => Promise.resolve( err.code === 404 ) );
+        .then( fileSpec => data.permDelete( fileSpec )
+            .then( () => data.load( fileSpec ) )
+        )
+        .catch( err => console.log( err ) || Promise.resolve( err.code === 404 ) );
 
 }
 
@@ -63,7 +65,13 @@ function verifyData( data, testName, testContent ) {
                 verifyDataCanList( data, testName ),
                 verifyDataCanDelete( data, testName )
 
-            ] );
+            ] )
+            .then( ( [ canList, canDelete ] ) => {
+
+                result.canList = canList;
+                result.canDelete = canDelete;
+
+            } );
 
         } )
         .then( () => result );
@@ -80,10 +88,16 @@ function verifyRepo( repo, testName ) {
         .then( () => repo.listProjects() )
         .then( listing => {
 
+console.log( listing );
             result.canListProjects = testProjects.every( testProject => ~listing.indexOf( testProject ) );
 
         } )
-        .catch( ex => { result.ex = ex; } )
+        .catch( ex => {
+
+            console.error( ex );
+            result.ex = ex;
+
+        } )
         .then( () => result );
 
 }

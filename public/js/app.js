@@ -771,11 +771,11 @@ var _provider = __webpack_require__(2);
 
 var _provider2 = _interopRequireDefault(_provider);
 
-var _Data = __webpack_require__(12);
+var _Data = __webpack_require__(14);
 
 var _Data2 = _interopRequireDefault(_Data);
 
-var _Repo = __webpack_require__(13);
+var _Repo = __webpack_require__(15);
 
 var _Repo2 = _interopRequireDefault(_Repo);
 
@@ -833,19 +833,23 @@ function verifyDataCanList(data, testName) {
     }).then(function () {
         return data.list(listTestName);
     }).then(function (listing) {
-        return sameItems(listing, listTestNames);
+        return listing.map(function (x) {
+            return x.name;
+        });
+    }).then(function (listingNames) {
+        return sameItems(listingNames, listTestNames);
     });
 }
 
 function verifyDataCanDelete(data, testName) {
 
     var deleteTestName = testName + "__delete";
-    return data.save(deleteTestName, "stuff").then(function () {
-        return data.permDelete(deleteTestName);
-    }).then(function () {
-        return data.load(deleteTestName);
+    return data.save(deleteTestName, "stuff").then(function (fileSpec) {
+        return data.permDelete(fileSpec).then(function () {
+            return data.load(fileSpec);
+        });
     }).catch(function (err) {
-        return Promise.resolve(err.code === 404);
+        return console.log(err) || Promise.resolve(err.code === 404);
     });
 }
 
@@ -868,7 +872,14 @@ function verifyData(data, testName, testContent) {
         if (!canStore) {
             return;
         }
-        return Promise.all([verifyDataCanList(data, testName), verifyDataCanDelete(data, testName)]);
+        return Promise.all([verifyDataCanList(data, testName), verifyDataCanDelete(data, testName)]).then(function (_ref) {
+            var _ref2 = _slicedToArray(_ref, 2),
+                canList = _ref2[0],
+                canDelete = _ref2[1];
+
+            result.canList = canList;
+            result.canDelete = canDelete;
+        });
     }).then(function () {
         return result;
     });
@@ -889,10 +900,13 @@ function verifyRepo(repo, testName) {
         return repo.listProjects();
     }).then(function (listing) {
 
+        console.log(listing);
         result.canListProjects = testProjects.every(function (testProject) {
             return ~listing.indexOf(testProject);
         });
     }).catch(function (ex) {
+
+        console.error(ex);
         result.ex = ex;
     }).then(function () {
         return result;
@@ -901,10 +915,10 @@ function verifyRepo(repo, testName) {
 
 function verifyStorage(data, repo, testName, testContent) {
 
-    return Promise.all([verifyData(data, testName, testContent), verifyRepo(repo, testName)]).then(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-            dataResults = _ref2[0],
-            repoResults = _ref2[1];
+    return Promise.all([verifyData(data, testName, testContent), verifyRepo(repo, testName)]).then(function (_ref3) {
+        var _ref4 = _slicedToArray(_ref3, 2),
+            dataResults = _ref4[0],
+            repoResults = _ref4[1];
 
         deleteAll(data, testName).catch(function (err) {
             return console.error("Cleaning up after self test", err);
@@ -924,11 +938,11 @@ function initStorageVerifications(owner) {
     });
     var testName = "__temp_testing_" + appName;
     console.log("Verify all storage...", owner);
-    return Promise.all([buildData, buildRepo, fetchTestData]).then(function (_ref3) {
-        var _ref4 = _slicedToArray(_ref3, 3),
-            data = _ref4[0],
-            repo = _ref4[1],
-            testData = _ref4[2];
+    return Promise.all([buildData, buildRepo, fetchTestData]).then(function (_ref5) {
+        var _ref6 = _slicedToArray(_ref5, 3),
+            data = _ref6[0],
+            repo = _ref6[1],
+            testData = _ref6[2];
 
         return verifyStorage(data, repo, testName, testData);
     }).then(function (verification) {
@@ -966,40 +980,40 @@ var GoogleCapabilities = function (_Provider) {
     }, {
         key: "verifyList",
         value: function verifyList() {
-            return verifyAllStorage(this).then(function (_ref5) {
-                var data = _ref5.data;
+            return verifyAllStorage(this).then(function (_ref7) {
+                var data = _ref7.data;
                 return !!data.canList;
             });
         }
     }, {
         key: "verifyStore",
         value: function verifyStore() {
-            return verifyAllStorage(this).then(function (_ref6) {
-                var data = _ref6.data;
+            return verifyAllStorage(this).then(function (_ref8) {
+                var data = _ref8.data;
                 return !!data.canStore;
             });
         }
     }, {
         key: "verifyGet",
         value: function verifyGet() {
-            return verifyAllStorage(this).then(function (_ref7) {
-                var data = _ref7.data;
+            return verifyAllStorage(this).then(function (_ref9) {
+                var data = _ref9.data;
                 return !!data.canGet;
             });
         }
     }, {
         key: "verifyDelete",
         value: function verifyDelete() {
-            return verifyAllStorage(this).then(function (_ref8) {
-                var data = _ref8.data;
+            return verifyAllStorage(this).then(function (_ref10) {
+                var data = _ref10.data;
                 return !!data.canDelete;
             });
         }
     }, {
         key: "verifyProjects",
         value: function verifyProjects() {
-            return verifyAllStorage(this).then(function (_ref9) {
-                var repo = _ref9.repo;
+            return verifyAllStorage(this).then(function (_ref11) {
+                var repo = _ref11.repo;
                 return console.log(repo) || !!repo.canListProjects;
             });
         }
@@ -1011,7 +1025,9 @@ var GoogleCapabilities = function (_Provider) {
 exports.default = new GoogleCapabilities();
 
 /***/ }),
-/* 12 */
+/* 12 */,
+/* 13 */,
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1182,24 +1198,26 @@ function updateInFolder(folder, file, data) {
     return request({ path: path, method: method, params: params, mimeType: mimeType, body: body });
 }
 
-function saveInFolder(folder, name, data) {
+function saveInFolder(folder, maybeSpec, data) {
 
-    return findFileInFolder(folder, name).then(function (maybeFile) {
-        return maybeFile ? updateInFolder(folder, maybeFile, data) : createInFolder(folder, name, data);
+    return findFileInFolder(folder, maybeSpec).then(function (maybeFile) {
+        return maybeFile ? updateInFolder(folder, maybeFile, data) : createInFolder(folder, maybeSpec, data);
     }).then(function (res) {
         return FileSpec.build(res.result);
     });
 }
 
-function loadFromFolder(folder, name) {
+function loadFromFolder(folder, maybeSpec) {
 
-    return findFileInFolder(folder, name).then(function (maybeFile) {
-        return maybeFile ? maybeFile : Promise.reject({ code: 404 });
+    return findFileInFolder(folder, maybeSpec).then(function (maybeFile) {
+        return maybeFile ? maybeFile : Promise.reject({ error: { code: 404 } });
     }).then(function (file) {
 
         var path = filesAPI + "/" + file.id;
         var params = { alt: "media" };
         return request({ path: path, params: params });
+    }).catch(function (ex) {
+        return Promise.reject(ex && ex.result && ex.result.error || ex);
     }).then(function (res) {
         return res.result;
     });
@@ -1282,16 +1300,16 @@ var Data = function () {
             return saveInFolder(this.folder, name, data).catch(cleanUpError);
         }
 
-        // retrieves the specified data in a data file with the specified name
+        // retrieves the specified data in a data file with the specified name/spec
 
     }, {
         key: "load",
-        value: function load(name) {
+        value: function load(maybeSpec) {
 
-            return loadFromFolder(this.folder, name).catch(cleanUpError);
+            return loadFromFolder(this.folder, maybeSpec).catch(cleanUpError);
         }
 
-        // deletes the data file with the specified name
+        // deletes the data file with the specified name/spec
         // if the data file is already gone, resolves with { code: 404 }
 
     }, {
@@ -1308,7 +1326,7 @@ var Data = function () {
 exports.default = Data;
 
 /***/ }),
-/* 13 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

@@ -137,21 +137,21 @@ function updateInFolder( folder, file, data ) {
 
 }
 
-function saveInFolder( folder, name, data ) {
+function saveInFolder( folder, maybeSpec, data ) {
 
-    return findFileInFolder( folder, name )
+    return findFileInFolder( folder, maybeSpec )
         .then( maybeFile => maybeFile ?
             updateInFolder( folder, maybeFile, data ) :
-            createInFolder( folder, name, data )
+            createInFolder( folder, maybeSpec, data )
         )
         .then( res => FileSpec.build( res.result ) );
 
 }
 
-function loadFromFolder( folder, name ) {
+function loadFromFolder( folder, maybeSpec ) {
 
-    return findFileInFolder( folder, name )
-        .then( maybeFile => maybeFile ? maybeFile : Promise.reject( { code: 404 } ) )
+    return findFileInFolder( folder, maybeSpec )
+        .then( maybeFile => maybeFile ? maybeFile : Promise.reject( { error: { code: 404 } } ) )
         .then( file => {
 
             const path = `${filesAPI}/${file.id}`;
@@ -159,6 +159,7 @@ function loadFromFolder( folder, name ) {
             return request( { path, params } );
 
         } )
+        .catch( ex => Promise.reject( ( ex && ex.result && ex.result.error ) || ex ) )
         .then( res => res.result );
 
 }
@@ -234,14 +235,14 @@ export default class Data {
 
     }
 
-    // retrieves the specified data in a data file with the specified name
-    load( name ) {
+    // retrieves the specified data in a data file with the specified name/spec
+    load( maybeSpec ) {
 
-        return loadFromFolder( this.folder, name ).catch( cleanUpError );
+        return loadFromFolder( this.folder, maybeSpec ).catch( cleanUpError );
 
     }
 
-    // deletes the data file with the specified name
+    // deletes the data file with the specified name/spec
     // if the data file is already gone, resolves with { code: 404 }
     permDelete( maybeSpec ) {
 

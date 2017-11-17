@@ -27,15 +27,6 @@
         onreadystatechange="if (this.readyState === 'complete') this.onload()">
     </script>
 
-
-    <script>
-        document.dispatchEvent( new CustomEvent("locate-services", { detail: function( e, services ) {
-
-            services.capabilities.verifyProjectRepo().then( console.log.bind( console ) );
-            window.x = services;
-
-        } } ) );
-    </script>
 </head>
 
 <body>

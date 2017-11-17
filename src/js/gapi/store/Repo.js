@@ -1,4 +1,5 @@
 const filename = name => `${name}_project.json`;
+const asSegmentFilename = ( name, key ) => `${name}__${key}.json`;
 const filenamePattern = /^(.*)_project\.json$/;
 
 export default class Repo {
@@ -14,21 +15,46 @@ export default class Repo {
     }
 
     /**
-     * Create a project with the specified name
-     * @param {string} name the name of the project
-     * @return {object} Promise to create the proejct
+     * Save a project with the specified name, metadata and segments (hash of key-values)
+     * @param {string} name of the project
+     * @param {object} metadata to save in the main project file
+     * @param {object} segments hash of key-value pairs to save, each in its own file
+     * @return {object} Promise of saved project
      */
-    createProject( name ) {
+    saveProject( name, metadata, segments = {} ) {
 
-        const project = [];
-        return this.data.save( filename( name ), project, { overwrite: false } );
+        const index = {};
+        Object.keys( segments ).forEach( ( key ) => {
+
+            index[ key ] = asSegmentFilename( name, key );
+
+        } );
+        const project = { index, metadata };
+        return this.data.save( filename( name ), project, { overwrite: true } );
 
     }
 
     /**
-     * Permanently deletes the named project
-     * @param {string} name the name of the project
-     * @return {object} Promise to delete the project
+     * Load a project with the specified name
+     * @param {string} name of the project
+     * @return {object} Promise of project { {object} metadata, {array} segments }
+     */
+    loadProject( name ) {
+
+        return this.data.load( filename( name ) )
+            .then( ( { metadata, index } ) => ( {
+
+                metadata: metadata || {},
+                segments: Object.keys( index || {} )
+
+            } ) );
+
+    }
+
+    /**
+     * Delete a project with the specified name
+     * @param {string} name of the project to delete
+     * @return {object} Promise of deletion
      */
     deleteProject( name ) {
 

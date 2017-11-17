@@ -190,9 +190,9 @@ function loadFromFolder( folder, maybeSpec ) {
         .then( ( maybeFile ) => {
 
             if ( maybeFile ) return maybeFile;
-            const err = new Error();
-            err.error = { code: 404 };
-            throw err;
+            const err = new Error( `Not found: ${maybeSpec}` );
+            err.code = 404;
+            return Promise.reject( err );
 
         } )
         .then( ( file ) => {

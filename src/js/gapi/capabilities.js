@@ -5,6 +5,7 @@ import Data from "./store/Data";
 import Repo from "./store/Repo";
 import config from "../config";
 import { log, logError } from "../diagnostics";
+import Project from "../model/Project";
 
 const { appName } = config;
 const storageVerifications = new WeakMap();
@@ -141,24 +142,27 @@ function verifyRepo( repo, testName ) {
         canListProjects: undefined,
         canCreateProjects: undefined,
         canDeleteProjects: undefined,
+        canSaveData: undefined,
+        canLoadData: undefined,
+        canDeleteData: undefined
 
     };
-    const testProjects = postfix( repoTestName, [ 1, 2 ] );
-    return Promise.all( testProjects.map( x => repo.deleteProject( x ) ) )
-        .then( () => Promise.all( testProjects.map( x => repo.createProject( x ) ) ) )
+    const testProjects = postfix( repoTestName, [ 1, 2 ] ).map( x => new Project( x, repo ) );
+    const recreateTestProjects = testProjects.map( x => x.deleteSelf().then( () => x.save() ) );
+    return Promise.all( recreateTestProjects )
         .then( () => repo.listProjects() )
         .then( ( listing ) => {
 
-            result.canListProjects = testProjects.every( x => ~listing.indexOf( x ) );
+            result.canListProjects = testProjects.every( x => ~listing.indexOf( x.name ) );
             if ( !result.canListProjects ) throw new Error( "Can't list/create projects" );
             result.canCreateProjects = true;
 
         } )
-        .then( () => repo.deleteProject( testProjects[ 0 ] )
+        .then( () => testProjects[ 0 ].deleteSelf()
             .then( () => repo.listProjects() )
             .then( ( listing ) => {
 
-                result.canDeleteProjects = !~listing.indexOf( testProjects[ 0 ] );
+                result.canDeleteProjects = !~listing.indexOf( testProjects[ 0 ].name );
 
             } ) )
         .catch( ( ex ) => {

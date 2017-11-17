@@ -1,9 +1,9 @@
-/*global gapi*/
+/* global gapi */
 
 const SCOPES = [
 
     "https://www.googleapis.com/auth/drive.metadata.readonly",
-    "https://www.googleapis.com/auth/drive.file"
+    "https://www.googleapis.com/auth/drive.file",
 
 ].join( " " );
 
@@ -13,14 +13,12 @@ function initAuthClient( config, resolve, reject ) {
 
         apiKey: config.API_KEY,
         clientId: config.CLIENT_ID,
-        scope: config.SCOPES || SCOPES
+        scope: config.SCOPES || SCOPES,
 
     };
-    gapi.load( "client:auth2", () =>
-
-        gapi.client.init( options ).then( resolve, reject )
-
-    );
+    gapi.load( "client:auth2", () => gapi.client
+        .init( options )
+        .then( resolve, reject ) );
 
 }
 
@@ -38,6 +36,7 @@ function tryInitAuthClient( config, resolve, reject ) {
 
 }
 
+export default undefined;
 export function init( config ) {
 
     const naga = tryInitAuthClient.bind( null, config );

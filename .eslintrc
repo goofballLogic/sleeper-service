@@ -1,0 +1,32 @@
+extends:
+    - airbnb
+rules:
+    computed-property-spacing:
+        - error
+        - always
+    space-in-parens:
+        - error
+        - always
+    padded-blocks:
+        - error
+        - always
+    array-bracket-spacing:
+        - error
+        - always
+    quotes:
+        - error
+        - double
+    eol-last: 0
+    indent:
+        - error
+        - 4
+    import/no-extraneous-dependencies: 0
+    no-bitwise:
+        - error
+        - allow:
+            - "~"
+    no-plusplus: 0
+    comma-dangle: 0
+    no-multi-assign: 0
+    valid-jsdoc:
+        - error

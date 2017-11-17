@@ -1,3 +1,7 @@
+import { logError } from "../../diagnostics";
+
+const filename = name => `${name}_project.json`;
+
 export default class Repo {
 
     constructor( data ) {
@@ -9,20 +13,21 @@ export default class Repo {
     createProject( name ) {
 
         const project = [];
-        console.log( "Creating", name );
-        return this.data.save( `${name}_project.json`, project, { overwrite: false } );
+        return this.data.save( filename( name ), project, { overwrite: false } );
 
     }
 
     trashProject( name ) {
 
+        return this.data.permDelete( filename( name ) );
+
     }
 
     listProjects() {
 
-        return this.data.list().then( ( something ) => {
+        return this.data.list().then( () => {
 
-            console.log( "Something", something );
+            logError( new Error( "Not sure what to do here" ) );
 
         } );
 

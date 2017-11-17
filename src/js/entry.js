@@ -1,15 +1,19 @@
-import Identity from "./services/identity.js";
-import Capabilities from "./services/capabilities.js";
+/* global document */
 
-import gapi_identity from "./gapi/identity.js";
-import gapi_capabilities from "./gapi/capabilities.js";
+import Identity from "./services/identity";
+import Capabilities from "./services/capabilities";
 
-document.addEventListener( "locate-services", e => {
+import gapiIdentity from "./gapi/identity";
+import gapiCapabilities from "./gapi/capabilities";
+
+if ( typeof document === "undefined" ) throw new Error( "document is not defined" );
+
+document.addEventListener( "locate-services", ( e ) => {
 
     e.detail( null, {
 
-        identity: new Identity( [ gapi_identity ] ),
-        capabilities: new Capabilities( [ gapi_capabilities ] )
+        identity: new Identity( [ gapiIdentity ] ),
+        capabilities: new Capabilities( [ gapiCapabilities ] )
 
     } );
 

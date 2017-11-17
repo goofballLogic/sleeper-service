@@ -1,6 +1,6 @@
 /* global gapi */
 
-import Provider from "./provider.js";
+import Provider from "./provider";
 
 function buildIdentity( p ) {
 
@@ -10,7 +10,11 @@ function buildIdentity( p ) {
     const name = ( signedIn && profile ) ? profile.getName() : undefined;
     const userId = ( signedIn && profile ) ? profile.getEmail() : undefined;
     const provider = Object.assign( p.describe(), p.status() );
-    return { provider, signedIn, userId, name };
+    return {
+
+        provider, signedIn, userId, name,
+
+    };
 
 }
 
@@ -47,13 +51,13 @@ class GoogleIdentity extends Provider {
 
     }
 
-    authorize() {
+    authorize() { // eslint-disable-line class-methods-use-this
 
         return new Promise( signin );
 
     }
 
-    deauthorize() {
+    deauthorize() { // eslint-disable-line class-methods-use-this
 
         return new Promise( signout );
 

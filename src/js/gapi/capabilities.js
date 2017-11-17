@@ -1,9 +1,10 @@
 /* global fetch */
 
-import Provider from "./provider.js";
-import Data from "./store/Data.js";
-import Repo from "./store/Repo.js";
-import config from "../config.js";
+import Provider from "./provider";
+import Data from "./store/Data";
+import Repo from "./store/Repo";
+import config from "../config";
+import { log, logError } from "../diagnostics";
 
 const { appName } = config;
 const storageVerifications = new WeakMap();
@@ -24,13 +25,14 @@ function expect409Error( err ) {
 
 function promiseAllTruthy( promises ) {
 
-    return Promise.all( promises.map(
+    return Promise.all( promises.map( p => p.catch( logError ) ) ).then( ( results ) => {
 
-        promise => promise.catch( ex => console.error( ex ) ) // returns non-truthy
+        const fails = results.map( ( x, i ) => {
 
-    ) ).then( results => {
+            if ( x ) return null;
+            return promises[ i ];
 
-        const fails = results.map( ( x, i ) => x ? null : promises[ i ] ).filter( x => x );
+        } ).filter( x => x );
         return fails.length ? Promise.reject( fails ) : Promise.resolve();
 
     } );
@@ -48,11 +50,15 @@ function verifyCanStore( data, testName, testContent ) {
 
         data.save( overwriteTestName, 42 )
             .then( () => data.save( overwriteTestName, 42, { overwrite: false } ) )
-            .then( () => { throw new Error( "Failed to reject non-overwrite request" ); } )
+            .then( () => {
+
+                throw new Error( "Failed to reject non-overwrite request" );
+
+            } )
             .catch( expect409Error )
             .then( () => true )
 
-    ] ).catch( ex => false );
+    ] ).catch( () => false );
 
 }
 
@@ -73,7 +79,7 @@ function verifyDataCanList( data, testName ) {
     const listTestName = `${testName}__list`;
     const listTestNames = postfix( listTestName, [ 1, 2, 3 ] );
     return data.list( listTestName )
-        .then( listing => deleteListing( data, listing )  )
+        .then( listing => deleteListing( data, listing ) )
         .then( () => generateDummies( data, listTestNames ) )
         .then( () => data.list( listTestName ) )
         .then( listing => sameItems( listing.map( x => x.name ), listTestNames ) );
@@ -85,7 +91,7 @@ function verifyDataCanDelete( data, testName ) {
     const deleteTestName = `${testName}__delete`;
     return data.save( deleteTestName, "stuff" )
         .then( fileSpec => data.permDelete( fileSpec ).then( () => data.load( fileSpec ) ) )
-        .catch( err => console.log( err ) || Promise.resolve( err.code === 404 ) );
+        .catch( err => logError( err ) || Promise.resolve( err.code === 404 ) );
 
 }
 
@@ -98,20 +104,24 @@ function deleteAll( data, testName ) {
 
 function verifyData( data, testName, testContent ) {
 
-    testName += "__data";
-    const result = { canList: undefined, canStore: undefined, canDelete: undefined, canGet: undefined };
-    return verifyCanStore( data, testName, testContent )
-        .then( canStore => {
+    const dataTestName = `${testName}__data`;
+    const result = {
+        canList: undefined,
+        canStore: undefined,
+        canDelete: undefined,
+        canGet: undefined,
+    };
+    return verifyCanStore( data, dataTestName, testContent )
+        .then( ( canStore ) => {
 
             result.canStore = result.canGet = canStore;
-            if ( !canStore ) { return; }
+            if ( !canStore ) return null;
             return Promise.all( [
 
-                verifyDataCanList( data, testName ),
-                verifyDataCanDelete( data, testName )
+                verifyDataCanList( data, dataTestName ),
+                verifyDataCanDelete( data, dataTestName )
 
-            ] )
-            .then( ( [ canList, canDelete ] ) => {
+            ] ).then( ( [ canList, canDelete ] ) => {
 
                 result.canList = canList;
                 result.canDelete = canDelete;
@@ -125,21 +135,20 @@ function verifyData( data, testName, testContent ) {
 
 function verifyRepo( repo, testName ) {
 
-    testName += "__repo";
+    const repoTestName = `${testName}__repo`;
     const result = { canListProjects: undefined };
-    const testProjects = postfix( testName, [ 1, 2 ] );
+    const testProjects = postfix( repoTestName, [ 1, 2 ] );
     return Promise.all( testProjects.map( x => repo.trashProject( x ) ) )
         .then( () => Promise.all( testProjects.map( x => repo.createProject( x ) ) ) )
         .then( () => repo.listProjects() )
-        .then( listing => {
+        .then( ( listing ) => {
 
-console.log( listing );
-            result.canListProjects = testProjects.every( testProject => ~listing.indexOf( testProject ) );
+            result.canListProjects = testProjects.every( x => ~listing.indexOf( x ) );
 
         } )
-        .catch( ex => {
+        .catch( ( ex ) => {
 
-            console.error( ex );
+            logError( ex );
             result.ex = ex;
 
         } )
@@ -151,7 +160,7 @@ function verifyStorage( data, repo, testName, testContent ) {
 
     function cleanup() {
 
-        deleteAll( data, testName ).catch( err => console.error( "Cleaning up after self test", err ) );
+        deleteAll( data, testName ).catch( err => logError( "Cleaning up after self test", err ) );
 
     }
     return Promise.all( [
@@ -164,7 +173,7 @@ function verifyStorage( data, repo, testName, testContent ) {
         cleanup();
         return { data: dataResults, repo: repoResults };
 
-    } ).catch( ex => {
+    } ).catch( ( ex ) => {
 
         cleanup();
         throw ex;
@@ -179,13 +188,13 @@ function initStorageVerifications( owner ) {
     const buildData = Data.inFolder( appName );
     const buildRepo = buildData.then( d => new Repo( d ) );
     const testName = `__temp_testing_${appName}`;
-    console.log( "Verify all storage...", owner );
+    log( "Verify all storage...", owner );
     return Promise.all( [ buildData, buildRepo, fetchTestData ] )
         .then( ( [ data, repo, testData ] ) => verifyStorage( data, repo, testName, testData ) )
         .then( verification => storageVerifications.set( owner, verification ) )
         .then( () => {
 
-            console.log( "Verify all storage complete", owner );
+            log( "Verify all storage complete", owner );
             return storageVerifications.get( owner );
 
         } );
@@ -200,7 +209,7 @@ function verifyAllStorage( owner ) {
         ||
         storageVerifications.set( owner, initStorageVerifications( owner ) ).get( owner )
 
-    );
+    ); // eslint-disable-line function-paren-newline
 
 }
 
@@ -219,15 +228,35 @@ class GoogleCapabilities extends Provider {
 
     }
 
-    verifyList() { return verifyAllStorage( this ).then( ( { data } ) => !!data.canList ); }
+    verifyList() {
 
-    verifyStore() { return verifyAllStorage( this ).then( ( { data } ) => !!data.canStore ); }
+        return verifyAllStorage( this ).then( ( { data } ) => !!data.canList );
 
-    verifyGet() { return verifyAllStorage( this ).then( ( { data } ) => !!data.canGet ); }
+    }
 
-    verifyDelete() { return verifyAllStorage( this ).then( ( { data } ) => !!data.canDelete ); }
+    verifyStore() {
 
-    verifyProjects() { return verifyAllStorage( this ).then( ( { repo } ) => console.log( repo ) || !!repo.canListProjects ); }
+        return verifyAllStorage( this ).then( ( { data } ) => !!data.canStore );
+
+    }
+
+    verifyGet() {
+
+        return verifyAllStorage( this ).then( ( { data } ) => !!data.canGet );
+
+    }
+
+    verifyDelete() {
+
+        return verifyAllStorage( this ).then( ( { data } ) => !!data.canDelete );
+
+    }
+
+    verifyProjects() {
+
+        return verifyAllStorage( this ).then( ( { repo } ) => !!repo.canListProjects );
+
+    }
 
 }
 

@@ -1,26 +1,37 @@
-import ProviderBase from "../provider-base.js";
-import config from "../config.js";
-import { init } from "./shared.js";
+/* global document */
+import ProviderBase from "../provider-base";
+import config from "../config";
+import { init } from "./shared";
+import { log } from "../diagnostics";
 
 let loadFlag = false;
 let loadError;
 
-document.addEventListener( "google-api-loaded", function handleAPILoaded() {
+if ( typeof document === "undefined" ) throw new Error( "document is undefined" );
+document.addEventListener( "google-api-loaded", () => {
 
     init( config.gapi )
-        .then( () => { loadFlag = true; } )
-        .catch( ex => { loadError = ex; } );
+        .then( () => {
+
+            loadFlag = true;
+
+        } )
+        .catch( ( ex ) => {
+
+            loadError = ex;
+
+        } );
 
 } );
 
 function waitFor( condition, timeout, description ) {
 
-    if ( timeout <= 0 ) { return Promise.reject( "Timed out" ); }
-    if ( condition() ) { return Promise.resolve( true ); }
+    if ( timeout <= 0 ) return Promise.reject( new Error( `Timed out ${description}` ) );
+    if ( condition() ) return Promise.resolve( true );
     const newTimeout = timeout - 100;
     return new Promise( ( resolve, reject ) => setTimeout(
 
-        () => waitFor( condition, newTimeout ).then( resolve, reject ),
+        () => waitFor( condition, newTimeout, description ).then( resolve, reject ),
         100
 
     ) );
@@ -35,7 +46,7 @@ export default class Provider extends ProviderBase {
 
     }
 
-    status() {
+    status() { // eslint-disable-line class-methods-use-this
 
         return { loaded: loadFlag, loadError };
 
@@ -43,11 +54,11 @@ export default class Provider extends ProviderBase {
 
     waitForLoad() {
 
-        if ( loadFlag ) { return Promise.resolve(); }
-        console.log( "Provider loading...", this );
+        if ( loadFlag ) return Promise.resolve();
+        log( "Provider loading...", this );
         return waitFor( () => loadFlag, 5000 ).then( () => {
 
-            console.log( "Provider loading complete", this );
+            log( "Provider loading complete", this );
 
         } );
 

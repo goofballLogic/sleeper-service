@@ -1,4 +1,7 @@
 /* global gapi */
+
+import { log } from "../../diagnostics";
+
 const filesAPI = "https://www.googleapis.com/drive/v3/files";
 const uploadAPI = "https://content.googleapis.com/upload/drive/v3/files";
 const folderMimeType = "application/vnd.google-apps.folder";
@@ -28,13 +31,11 @@ let counter = 0;
 
 function request( options ) {
 
-    options = Object.assign( { method: "GET", path: filesAPI }, options );
-    console.log( "GAPI request", ++counter, options );
-    return new Promise( ( resolve, reject ) =>
-
-        gapi.client.request( options ).then( resolve, reject )
-
-    );
+    const defaultedOptions = Object.assign( { method: "GET", path: filesAPI }, options );
+    log( "GAPI request", ++counter, defaultedOptions );
+    return new Promise( ( resolve, reject ) => gapi.client
+        .request( defaultedOptions )
+        .then( resolve, reject ) );
 
 }
 
@@ -47,13 +48,19 @@ function createFolder( name ) {
 
 }
 
+function firstOrNull( list, transform = x => x ) {
+
+    if ( list && list.length ) return transform( list[ 0 ] );
+    return null;
+
+}
 function ensureFolder( name ) {
 
     const q = `name='${name}' and mimeType='${folderMimeType}' and trashed=false`;
     const params = { q };
     return request( { params } )
         .then( res => res.result.files )
-        .then( files => files.length ? files[ 0 ] : null )
+        .then( firstOrNull )
         .then( maybeFolder => maybeFolder || createFolder( name ) )
         .then( FileSpec.build );
 
@@ -61,22 +68,27 @@ function ensureFolder( name ) {
 
 function dumbDownPrefix( prefix ) {
 
+    let ret = prefix;
     // API doesn't like dashes for some reason
-    const dashIndex = prefix.indexOf( "-" );
-    if ( ~dashIndex ) { prefix = prefix.substring( 0, dashIndex ); }
+    const dashIndex = ret.indexOf( "-" );
+    if ( ~dashIndex ) ret = ret.substring( 0, dashIndex );
     // API doesn't like more than ~20 characters for some reason
-    if ( prefix.length > 20 ) { prefix = prefix.substring( 0, 20 ); }
-    return prefix;
+    if ( ret.length > 20 ) ret = ret.substring( 0, 20 );
+    return ret;
 
 }
 function listFilesInFolder( folder, maybePrefix ) {
 
     let q = `mimeType='${dataMimeType}' and trashed=false`;
-    let nameFilter = x => true;
+    let nameFilter = () => true;
     if ( maybePrefix ) {
 
         const apiPrefix = dumbDownPrefix( maybePrefix );
-        if ( apiPrefix !== maybePrefix ) { nameFilter = x => x.name.indexOf( maybePrefix ) === 0; }
+        if ( apiPrefix !== maybePrefix ) {
+
+            nameFilter = x => x.name.indexOf( maybePrefix ) === 0;
+
+        }
         q = `name contains '${apiPrefix}' and ${q}`;
 
     }
@@ -90,19 +102,23 @@ function listFilesInFolder( folder, maybePrefix ) {
 
 function findFileInFolder( folder, maybeSpec ) {
 
-    if( maybeSpec instanceof FileSpec ) { return Promise.resolve( maybeSpec ); }
+    if ( maybeSpec instanceof FileSpec ) {
+
+        return Promise.resolve( maybeSpec );
+
+    }
     const { id } = folder || {};
     const q = `name='${maybeSpec}' and '${id}' in parents and mimeType='${dataMimeType}' and trashed=false`;
     const params = { q };
     return request( { params } )
         .then( res => res.result.files )
-        .then( files => files.length ? FileSpec.build( files[ 0 ] ) : null );
+        .then( files => firstOrNull( files, file => FileSpec.build( file ) ) );
 
 }
 
 function JSONpart( obj ) {
 
-    return `\r\nContent-Type: ${JSONcontentType}\r\n\r\n${JSON.stringify(obj, null, 1)}`;
+    return `\r\nContent-Type: ${JSONcontentType}\r\n\r\n${JSON.stringify( obj, null, 1 )}`;
 
 }
 
@@ -118,32 +134,52 @@ function createInFolder( folder, name, data ) {
 
     const method = "POST";
     const headers = { "Content-Type": multiPartMimeType };
-    const params = { "uploadType": "multipart" };
+    const params = { uploadType: "multipart" };
     const metadata = { parents: [ folder.id ], name };
     const body = multipart( JSONpart( metadata ), JSONpart( data ) );
     const path = uploadAPI;
-    return request( { path, method, params, headers, body } );
+    return request( {
+
+        path, method, params, headers, body,
+
+    } );
 
 }
 
 function updateInFolder( folder, file, data ) {
 
     const method = "PATCH";
-    const params = { "uploadType": "media" };
+    const params = { uploadType: "media" };
     const mimeType = dataMimeType;
     const body = JSON.stringify( data );
     const path = `${uploadAPI}/${file.id}`;
-    return request( { path, method, params, mimeType, body } );
+    return request( {
+
+        path, method, params, mimeType, body,
+
+    } );
 
 }
 
-function saveInFolder( folder, maybeSpec, data ) {
+function throwAlreadyExists( file ) {
 
+    const err = new Error( `File already exists: ${file.id} ${file.name}` );
+    err.code = 409;
+    throw err;
+
+}
+
+function saveInFolder( folder, maybeSpec, data, options = {} ) {
+
+    const { overwrite } = options;
     return findFileInFolder( folder, maybeSpec )
-        .then( maybeFile => maybeFile ?
-            updateInFolder( folder, maybeFile, data ) :
-            createInFolder( folder, maybeSpec, data )
-        )
+        .then( ( maybeFile ) => {
+
+            if ( maybeFile && !overwrite ) throwAlreadyExists( maybeFile );
+            if ( maybeFile ) return updateInFolder( folder, maybeFile, data );
+            return createInFolder( folder, maybeSpec, data );
+
+        } )
         .then( res => FileSpec.build( res.result ) );
 
 }
@@ -151,8 +187,15 @@ function saveInFolder( folder, maybeSpec, data ) {
 function loadFromFolder( folder, maybeSpec ) {
 
     return findFileInFolder( folder, maybeSpec )
-        .then( maybeFile => maybeFile ? maybeFile : Promise.reject( { error: { code: 404 } } ) )
-        .then( file => {
+        .then( ( maybeFile ) => {
+
+            if ( maybeFile ) return maybeFile;
+            const err = new Error();
+            err.error = { code: 404 };
+            throw err;
+
+        } )
+        .then( ( file ) => {
 
             const path = `${filesAPI}/${file.id}`;
             const params = { alt: "media" };
@@ -167,44 +210,41 @@ function loadFromFolder( folder, maybeSpec ) {
 function deleteFromFolder( folder, maybeSpec ) {
 
     return findFileInFolder( folder, maybeSpec )
-        .then( file => {
+        .then( ( maybeFile ) => {
 
-            const path = `${filesAPI}/${file.id}`;
+            if ( !maybeFile ) return Promise.resolve( { code: 404 } );
+            const path = `${filesAPI}/${maybeFile.id}`;
             const method = "DELETE";
             return request( { method, path } );
 
-        } )
-        .catch( err => err.code === 404
-            ? Promise.resolve( { code: 404 } )
-            : Promise.reject( err )
-        );
+        } );
 
 }
 
 function cleanUpError( err ) {
 
-    if ( err.code ) { return Promise.reject( err ); }
+    if ( err.code ) return Promise.reject( err );
     if ( err.result ) {
 
-        return Promise.reject( "WTF am i supposed to do with this? " + JSON.stringify( err.result, null, 3 ) );
-
-    } else {
-
-        console.error( err );
-        return Promise.reject( {
-            code: err.status || 500,
-            message: err.body || err.statusText || "Unknown error",
-            err
-        } );
+        console.error( `WTF am i supposed to do with this? ${JSON.stringify( err.result, null, 3 )}` ); // eslint-disable-line no-console
 
     }
+    console.error( err ); // eslint-disable-line no-console
+    const cleanError = new Error( err.body || err.statusText || "Unknown error" );
+    cleanError.err = err;
+    cleanError.code = err.status || 500;
+    return Promise.reject( cleanError );
 
 }
 
 export default class Data {
 
-    // builds a Data repository for the named folder
-    // if the folder doesn't already exist, creates it
+    /**
+     * builds a Data repository for the named folder
+     * if the folder doesn't already exist, creates it
+     * @param {string} folderName the name of the folder for which to build
+     * @returns {Data} the data repository
+     */
     static inFolder( folderName ) {
 
         return Promise.resolve()
@@ -213,37 +253,61 @@ export default class Data {
 
     }
 
-    // make a Data repository for files stored in the specified folder
+    /**
+     * Make a Data repository for files stored in the specified folder
+     * @param {FileSpec} folderSpec the folder containing files to operate on
+     */
     constructor( folderSpec ) {
 
         this.folder = folderSpec;
 
     }
 
-    // returns a list of all data files in this folder (JSON files)
-    // if maybePrefix is specified, only files with the specified prefix are returned
+    /**
+     * Returns a list of all data files in this folder (JSON files)
+     * @param {object} [maybePrefix] if specified, only files with the specified
+     * prefix are returned
+     * @returns {Promise} promise to list the files in this folder
+     */
     list( maybePrefix ) {
 
         return listFilesInFolder( this.folder, maybePrefix ).catch( cleanUpError );
 
     }
 
-    // saves the specified data in a data file with the specified name
-    save( name, data ) {
+    /**
+     * Saves the specified data in a data file with the specified name
+     * @param {string} name the name of the file
+     * @param {object} data the data to save (will be JSON stringified)
+     * @param {object} [options] save options
+     * @param {string} options.overwrite if True will check if file exists and
+     * return an error with code 409
+     * @returns {Promise} promise to save the file
+     */
+    save( name, data, options ) {
 
-        return saveInFolder( this.folder, name, data ).catch( cleanUpError );
+        return saveInFolder( this.folder, name, data, options ).catch( cleanUpError );
 
     }
 
-    // retrieves the specified data in a data file with the specified name/spec
+    /**
+     * Retrieves the specified data in a data file with the specified name/spec
+     * @param {string|FileSpec} maybeSpec the name or FileSpec of the file to load
+     * @return {object} Promise to load the file specified
+     */
     load( maybeSpec ) {
 
         return loadFromFolder( this.folder, maybeSpec ).catch( cleanUpError );
 
     }
 
-    // deletes the data file with the specified name/spec
-    // if the data file is already gone, resolves with { code: 404 }
+    /**
+     * Permenantly deletes the data file with the specified name/spec. The file
+     * is not recoverable from the recycle bin. If the data file is already
+     * gone, resolves with { code: 404 }
+     * @param {string|FileSpec} maybeSpec the name or FileSpec of the file to delete
+     * @return {object} Promise to delete the file
+     */
     permDelete( maybeSpec ) {
 
         return deleteFromFolder( this.folder, maybeSpec ).catch( cleanUpError );

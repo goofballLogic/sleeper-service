@@ -136,16 +136,31 @@ function verifyData( data, testName, testContent ) {
 function verifyRepo( repo, testName ) {
 
     const repoTestName = `${testName}__repo`;
-    const result = { canListProjects: undefined };
+    const result = {
+
+        canListProjects: undefined,
+        canCreateProjects: undefined,
+        canDeleteProjects: undefined,
+
+    };
     const testProjects = postfix( repoTestName, [ 1, 2 ] );
-    return Promise.all( testProjects.map( x => repo.trashProject( x ) ) )
+    return Promise.all( testProjects.map( x => repo.deleteProject( x ) ) )
         .then( () => Promise.all( testProjects.map( x => repo.createProject( x ) ) ) )
         .then( () => repo.listProjects() )
         .then( ( listing ) => {
 
             result.canListProjects = testProjects.every( x => ~listing.indexOf( x ) );
+            if ( !result.canListProjects ) throw new Error( "Can't list/create projects" );
+            result.canCreateProjects = true;
 
         } )
+        .then( () => repo.deleteProject( testProjects[ 0 ] )
+            .then( () => repo.listProjects() )
+            .then( ( listing ) => {
+
+                result.canDeleteProjects = !~listing.indexOf( testProjects[ 0 ] );
+
+            } ) )
         .catch( ( ex ) => {
 
             logError( ex );
@@ -254,7 +269,7 @@ class GoogleCapabilities extends Provider {
 
     verifyProjects() {
 
-        return verifyAllStorage( this ).then( ( { repo } ) => !!repo.canListProjects );
+        return verifyAllStorage( this ).then( ( { repo } ) => repo );
 
     }
 

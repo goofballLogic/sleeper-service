@@ -54,7 +54,19 @@ export default class CapabilitiesService extends Service {
 
                 p.verifyProjects(),
 
-            ] ).then( ( [ canListProjects ] ) => ( { canListProjects } ) ) );
+            ] ).then( ( [ {
+
+                canListProjects,
+                canDeleteProjects,
+                canCreateProjects
+
+            } ] ) => ( {
+
+                canListProjects,
+                canDeleteProjects,
+                canCreateProjects
+
+            } ) ) );
 
     }
 

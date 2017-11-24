@@ -1,6 +1,6 @@
 import Service from "./service";
 
-const requiredFunctions = [ "list" ];
+const requiredFunctions = [ "list", "build" ];
 const chosenKey = "chosen-projects-provider";
 
 export default class ProjectsService extends Service {
@@ -8,6 +8,18 @@ export default class ProjectsService extends Service {
     constructor( providers ) {
 
         super( providers, chosenKey, requiredFunctions );
+
+    }
+
+    async list() {
+
+        return ( await this.ensureProvider() ).list();
+
+    }
+
+    async build( name ) {
+
+        return ( await this.ensureProvider() ).build( name );
 
     }
 

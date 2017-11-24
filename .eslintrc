@@ -1,5 +1,7 @@
 extends:
     - airbnb
+parserOptions:
+    - ecmaVersion: 2017
 rules:
     computed-property-spacing:
         - error

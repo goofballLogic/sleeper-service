@@ -1,39 +1,86 @@
 const repos = new WeakMap();
+const segmentsForProject = new WeakMap();
+const removedSegmentsForProject = new WeakMap();
+
+const clone = x => typeof x === "undefined" ? undefined : JSON.parse( JSON.stringify( x ) );
 
 export default class Project {
 
     constructor( name, repo ) {
 
         this.name = name;
-        repos[ this ] = repo;
-        this.init();
+        repos.set( this, repo );
+        segmentsForProject.set( this, {} );
+        removedSegmentsForProject.set( this, [] );
 
     }
 
-    init() {
+    async deleteSelf() {
 
-        this.segments = {};
-
-    }
-
-    deleteSelf() {
-
-        const repo = repos[ this ];
+        const repo = repos.get( this );
+        const segments = segmentsForProject.get( this );
         const { name } = this;
-        return repo.loadProject( name )
-            .then( ( { segments } ) => repo.deleteProject( name, segments ) )
-            .catch( ( ex ) => {
+        try {
 
-                if ( ex.code !== 404 ) throw ex;
+            const { segments } = await repo.loadProject( name );
+            return repo.deleteProject( name, segments );
 
-            } );
+        } catch( ex ) {
+
+            if ( ex.code !== 404 ) throw ex;
+
+        }
 
     }
 
-    save() {
+    removeSegment( name ) {
+
+        const segments = segmentsForProject.get( this );
+
+        if ( name in segments )
+        {
+
+            console.log( "Removing", name );
+            const removedSegments = removedSegmentsForProject.get( this );
+            removedSegments.push( name );
+            delete segments[ name ];
+
+        }
+
+    }
+
+    segment( name, maybeData ) {
+
+        const segments = segmentsForProject.get( this );
+        if ( typeof maybeData !== "undefined" ) {
+
+            segments[ name ] = clone( maybeData );
+
+        } else {
+
+            return clone( segments[ name ] );
+
+        }
+
+    }
+
+    async save() {
+
+        const repo = repos.get( this );
+        const segments = segmentsForProject.get( this );
+        const removedSegments = removedSegmentsForProject.get( this );
 
         const metadata = { saved: Date.now() };
-        return repos[ this ].saveProject( this.name, metadata, Object.keys( this.segments ) );
+        await repo.saveProject( this.name, metadata, clone( segments ), clone( removedSegments ) );
+        removedSegmentsForProject.set( this, [] );
+
+    }
+
+    async load() {
+
+        const repo = repos.get( this  );
+        const { segments } = await repo.loadProject( this.name );
+        segmentsForProject.set( this, clone( segments ) );
 
     }
 

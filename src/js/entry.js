@@ -4,9 +4,9 @@ import Identity from "./services/identity";
 import Capabilities from "./services/capabilities";
 import Projects from "./services/projects";
 
-import gapiIdentity from "./gapi/identity";
-import gapiCapabilities from "./gapi/capabilities";
-import gapiProjects from "./gapi/projects";
+import gapiIdentity from "./gapi/GoogleIdentity";
+import gapiCapabilities from "./gapi/GoogleCapabilities";
+import gapiProjects from "./gapi/GoogleProjects";
 
 import selfTest from "./self-test";
 

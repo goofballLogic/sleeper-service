@@ -41,7 +41,7 @@ export default class Service extends EventEmitter {
 
         const chosenKey = chosenKeys.get( this );
         local.setItem( chosenKey, provider.key );
-        findProvider( this );
+        this.provider = findProvider( this );
 
     }
 
@@ -49,7 +49,7 @@ export default class Service extends EventEmitter {
 
         const chosenKey = chosenKeys.get( this );
         local.removeItem( chosenKey );
-        findProvider( this );
+        this.provider = findProvider( this );
 
     }
 

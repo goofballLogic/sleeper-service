@@ -19,18 +19,30 @@ export default class Repo {
      * @param {string} name of the project
      * @param {object} metadata to save in the main project file
      * @param {object} segments hash of key-value pairs to save, each in its own file
-     * @return {object} Promise of saved project
+     * @return {Promise<void>} Promise of saved project
      */
-    saveProject( name, metadata, segments = {} ) {
+    async saveProject( name, metadata, segments = {}, removedSegments = [] ) {
 
-        const index = {};
-        Object.keys( segments ).forEach( ( key ) => {
+        const index = Object.keys( segments ).reduce( ( acc, key ) => Object.assign( acc, {
 
-            index[ key ] = asSegmentFilename( name, key );
+            [ key ]: asSegmentFilename( name, key )
 
-        } );
+        } ), {} );
         const project = { index, metadata };
-        return this.data.save( filename( name ), project, { overwrite: true } );
+        await this.data.save( filename( name ), project, { overwrite: true } );
+        const segmentSaves = Object.keys( index ).map( name =>
+
+            this.data.save( index[ name ], segments[ name ], { overwrite: true } )
+
+        );
+        await Promise.all( segmentSaves );
+console.log( "removed", removedSegments );
+        const segmentDeletes = removedSegments.map( key =>
+
+            this.data.permDelete( asSegmentFilename( name, key ) )
+
+        );
+        await Promise.all( segmentDeletes );
 
     }
 
@@ -39,15 +51,18 @@ export default class Repo {
      * @param {string} name of the project
      * @return {object} Promise of project { {object} metadata, {array} segments }
      */
-    loadProject( name ) {
+    async loadProject( name ) {
 
-        return this.data.load( filename( name ) )
-            .then( ( { metadata, index } ) => ( {
+        const { metadata, index } = await this.data.load( filename( name ) );
+        const segmentLoads = Object.keys( index ).map( name => this.data.load( index[ name ] ) );
+        const loaded = await Promise.all( segmentLoads );
+        const segments = Object.keys( index ).reduce( ( acc, name, i ) => ( {
 
-                metadata: metadata || {},
-                segments: Object.keys( index || {} )
+            ...acc,
+            [ name ]: loaded[ i ]
 
-            } ) );
+        } ), { } );
+        return { metadata: metadata || {}, segments };
 
     }
 

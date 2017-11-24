@@ -1,4 +1,5 @@
 const path = require( "path" );
+const UglifyJSPlugin = require( "uglifyjs-webpack-plugin" );
 
 module.exports = [ {
     entry: "./src/js/entry.js",
@@ -13,9 +14,12 @@ module.exports = [ {
         ],
     },
 }, {
-    entry: "./src/js/polly.js",
+    entry: [ "babel-polyfill", "./src/js/polly.js" ],
     output: {
         path: path.join( __dirname, "public/js" ),
         filename: "polly.js",
     },
+    plugins: [
+        new UglifyJSPlugin()
+    ]
 } ];

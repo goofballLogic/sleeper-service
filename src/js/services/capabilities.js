@@ -26,47 +26,33 @@ export default class CapabilitiesService extends Service {
 
     }
 
-    verifyStorage() {
+    async verifyStorage() {
 
-        return this.ensureProvider()
-            .then( p => Promise.all( [
+        const provider = await this.ensureProvider();
+        const [ canList, canStore, canGet, canDelete ] = await Promise.all( [
 
-                p.verifyList(),
-                p.verifyStore(),
-                p.verifyGet(),
-                p.verifyDelete(),
+            provider.verifyList(),
+            provider.verifyStore(),
+            provider.verifyGet(),
+            provider.verifyDelete(),
 
-            ] ).then( ( [ canList, canStore, canGet, canDelete ] ) => ( {
+        ] );
+        return {
 
-                canList,
-                canStore,
-                canGet,
-                canDelete,
+            canList,
+            canStore,
+            canGet,
+            canDelete,
 
-            } ) ) );
+        };
 
     }
 
-    verifyProjectRepo() {
+    async verifyProjectRepo() {
 
-        return this.ensureProvider()
-            .then( p => Promise.all( [
-
-                p.verifyProjects(),
-
-            ] ).then( ( [ {
-
-                canListProjects,
-                canDeleteProjects,
-                canCreateProjects
-
-            } ] ) => ( {
-
-                canListProjects,
-                canDeleteProjects,
-                canCreateProjects
-
-            } ) ) );
+        const provider = await this.ensureProvider();
+        const { canListProjects, canDeleteProjects, canCreateProjects, canLoadData, canSaveData, canDeleteData } = await provider.verifyProjects();
+        return { canListProjects, canDeleteProjects, canCreateProjects, canLoadData, canSaveData, canDeleteData };
 
     }
 

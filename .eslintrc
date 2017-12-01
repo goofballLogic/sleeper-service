@@ -1,7 +1,7 @@
 extends:
     - airbnb
 parserOptions:
-    - ecmaVersion: 2017
+    ecmaVersion: 2017
 rules:
     computed-property-spacing:
         - error
@@ -18,6 +18,9 @@ rules:
     quotes:
         - error
         - double
+    max-len:
+        - warn
+        - 150
     eol-last: 0
     indent:
         - error

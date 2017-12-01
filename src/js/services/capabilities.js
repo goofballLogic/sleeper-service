@@ -51,8 +51,12 @@ export default class CapabilitiesService extends Service {
     async verifyProjectRepo() {
 
         const provider = await this.ensureProvider();
-        const { canListProjects, canDeleteProjects, canCreateProjects, canLoadData, canSaveData, canDeleteData } = await provider.verifyProjects();
-        return { canListProjects, canDeleteProjects, canCreateProjects, canLoadData, canSaveData, canDeleteData };
+        const {
+            canListProjects, canDeleteProjects, canCreateProjects, canLoadData, canSaveData, canDeleteData
+        } = await provider.verifyProjects();
+        return {
+            canListProjects, canDeleteProjects, canCreateProjects, canLoadData, canSaveData, canDeleteData
+        };
 
     }
 

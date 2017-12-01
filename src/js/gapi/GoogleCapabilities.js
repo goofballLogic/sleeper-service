@@ -2,21 +2,21 @@
 
 import Provider from "./provider";
 import Data from "./store/Data";
-import Repo from "./store/Repo";
 import config from "../config";
 import { log, logError } from "../diagnostics";
-import Project from "../model/Project";
 import projects from "./GoogleProjects";
 
 const { appName } = config;
 const storageVerifications = new WeakMap();
 const projectsVerifications = new WeakMap();
-const cachedVerification = ( owner, verifications, verify ) => verifications.get( owner ) || verifications.set( owner, verify() ).get( owner );
+const cachedVerification = ( owner, verifications, verify ) =>
+    verifications.get( owner ) ||
+    verifications.set( owner, verify() ).get( owner );
 
-const testName = `__test_${appName}`;
+const testNamePrefix = `__test_${appName}`;
 const sameItems = ( as, bs ) => as.length === bs.length && as.every( x => ~bs.indexOf( x ) );
 const sameJSON = ( a, b ) => JSON.stringify( a ) === JSON.stringify( b );
-const suffix= ( x, suffixes ) => suffixes.map( p => `${x}__${p}` );
+const suffix = ( x, suffixes ) => suffixes.map( p => `${x}__${p}` );
 
 function expect409Error( err ) {
 
@@ -142,7 +142,7 @@ const equalsJSON = ( x, y ) => JSON.stringify( x ) === JSON.stringify( y );
 
 async function verifyProjectsOperations() {
 
-    const repoTestName = `${testName}__repo`;
+    const repoTestName = `${testNamePrefix}__repo`;
     const result = {
 
         canListProjects: undefined,
@@ -165,7 +165,7 @@ async function verifyProjectsOperations() {
         result.canListProjects = false;
         const listing = await projects.list();
         result.canListProjects = testProjects.every( p => ~listing.indexOf( p.name ) );
-        if ( !result.canListProjects  ) throw new Error( "Can't list/create projects" );
+        if ( !result.canListProjects ) throw new Error( "Can't list/create projects" );
         result.canCreateProjects = true;
 
         // delete one of them and check it's gone
@@ -176,9 +176,9 @@ async function verifyProjectsOperations() {
 
         // add a segment to the remaining one
         const remoaner = testProjects[ 1 ];
-        remoaner.segment( "eu", { "sentiment": "bye-bye" } );
-        remoaner.segment( "uk", { "sentiment": "hmmmm" } );
-        remoaner.segment( "world", { "sentiment": "hello" } );
+        remoaner.segment( "eu", { sentiment: "bye-bye" } );
+        remoaner.segment( "uk", { sentiment: "hmmmm" } );
+        remoaner.segment( "world", { sentiment: "hello" } );
         remoaner.removeSegment( "world" );
         result.canSaveData = false;
         await remoaner.save();
@@ -199,14 +199,14 @@ async function verifyProjectsOperations() {
         result.canDeleteData = false;
         remoaner2.removeSegment( "uk" );
         remoaner2.removeSegment( "eu" );
-        remoaner2.segment( "eu", { "sentiment": "hello again!" } );
+        remoaner2.segment( "eu", { sentiment: "hello again!" } );
         await remoaner2.save();
         await remoaner.load();
         result.canDeleteData = ( typeof remoaner.segment( "uk" ) === "undefined" )
             && equalsJSON( remoaner.segment( "eu" ), remoaner2.segment( "eu" ) );
         if ( !result.canDeleteData ) throw new Error( "Delete data didn't work" );
 
-    } catch( ex ) {
+    } catch ( ex ) {
 
         logError( ex );
         result.ex = ex;
@@ -214,7 +214,7 @@ async function verifyProjectsOperations() {
     }
     return result;
 
-};
+}
 
 async function cleanupTestStorage( data, testName ) {
 
@@ -222,7 +222,7 @@ async function cleanupTestStorage( data, testName ) {
 
         await deleteAll( data, testName );
 
-    } catch( err ) {
+    } catch ( err ) {
 
         logError( "Cleaning up after self test", err );
 
@@ -237,13 +237,13 @@ const verifyStorage = owner => cachedVerification( owner, storageVerifications, 
 
         await owner.waitForLoad();
         data = await Data.inFolder( appName );
-        const testData = await fetch( "/public/data/notshaka.json" ).then( res => res.json() )
-        return await verifyData( data, testName, testData ).catch( logError );
+        const testData = await fetch( "/public/data/notshaka.json" ).then( res => res.json() );
+        return await verifyData( data, testNamePrefix, testData ).catch( logError );
 
     } finally {
 
         log( "Verify all storage complete - cleaning up test storage" );
-        await cleanupTestStorage( data, testName );
+        await cleanupTestStorage( data, testNamePrefix );
 
     }
 
@@ -256,12 +256,12 @@ const verifyProjects = owner => cachedVerification( owner, projectsVerifications
 
         await owner.waitForLoad();
         data = await Data.inFolder( appName );
-        return await verifyProjectsOperations( projects, testName ).catch( logError );
+        return await verifyProjectsOperations( projects, testNamePrefix ).catch( logError );
 
     } finally {
 
         log( "Verify projects complete - cleaning up test storage", owner );
-        await cleanupTestStorage( data, testName );
+        await cleanupTestStorage( data, testNamePrefix );
 
     }
 
@@ -311,8 +311,7 @@ class GoogleCapabilities extends Provider {
 
     async verifyProjects() {
 
-        const projects = await verifyProjects( this );
-        return projects;
+        return verifyProjects( this );
 
     }
 

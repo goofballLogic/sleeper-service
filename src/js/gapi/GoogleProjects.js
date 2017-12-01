@@ -1,10 +1,9 @@
-/* global gapi */
-
 import Provider from "./provider";
 import config from "../config";
 import Data from "./store/Data";
 import Repo from "./store/Repo";
 import Project from "../model/Project";
+
 const { appName } = config;
 
 async function initializeRepo() {
@@ -38,6 +37,8 @@ class GoogleProjects extends Provider {
     /**
      * Builds a project object
      * Note that this isn't necessarily loaded or saved yet
+     * @param {string} name The name of the project
+     * @returns {Promise<Project>} project once the repo is ready
      */
     async build( name ) {
 

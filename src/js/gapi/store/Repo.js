@@ -19,6 +19,7 @@ export default class Repo {
      * @param {string} name of the project
      * @param {object} metadata to save in the main project file
      * @param {object} segments hash of key-value pairs to save, each in its own file
+     * @param {array} removedSegments which have been removed and should be purged from the underlying storage
      * @return {Promise<void>} Promise of saved project
      */
     async saveProject( name, metadata, segments = {}, removedSegments = [] ) {
@@ -30,18 +31,16 @@ export default class Repo {
         } ), {} );
         const project = { index, metadata };
         await this.data.save( filename( name ), project, { overwrite: true } );
-        const segmentSaves = Object.keys( index ).map( name =>
-
-            this.data.save( index[ name ], segments[ name ], { overwrite: true } )
-
-        );
+        const segmentSaves = Object.keys( index )
+            .map( segmentName => this.data.save(
+                index[ segmentName ],
+                segments[ segmentName ],
+                { overwrite: true }
+            ) );
         await Promise.all( segmentSaves );
-console.log( "removed", removedSegments );
         const segmentDeletes = removedSegments.map( key =>
 
-            this.data.permDelete( asSegmentFilename( name, key ) )
-
-        );
+            this.data.permDelete( asSegmentFilename( name, key ) ) );
         await Promise.all( segmentDeletes );
 
     }
@@ -54,12 +53,12 @@ console.log( "removed", removedSegments );
     async loadProject( name ) {
 
         const { metadata, index } = await this.data.load( filename( name ) );
-        const segmentLoads = Object.keys( index ).map( name => this.data.load( index[ name ] ) );
+        const segmentLoads = Object.keys( index ).map( segmentName => this.data.load( index[ segmentName ] ) );
         const loaded = await Promise.all( segmentLoads );
-        const segments = Object.keys( index ).reduce( ( acc, name, i ) => ( {
+        const segments = Object.keys( index ).reduce( ( acc, segmentName, i ) => ( {
 
             ...acc,
-            [ name ]: loaded[ i ]
+            [ segmentName ]: loaded[ i ]
 
         } ), { } );
         return { metadata: metadata || {}, segments };

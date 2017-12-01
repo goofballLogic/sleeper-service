@@ -2,7 +2,7 @@ const repos = new WeakMap();
 const segmentsForProject = new WeakMap();
 const removedSegmentsForProject = new WeakMap();
 
-const clone = x => typeof x === "undefined" ? undefined : JSON.parse( JSON.stringify( x ) );
+const clone = x => ( typeof x === "undefined" ? undefined : JSON.parse( JSON.stringify( x ) ) );
 
 export default class Project {
 
@@ -18,16 +18,16 @@ export default class Project {
     async deleteSelf() {
 
         const repo = repos.get( this );
-        const segments = segmentsForProject.get( this );
         const { name } = this;
         try {
 
             const { segments } = await repo.loadProject( name );
             return repo.deleteProject( name, segments );
 
-        } catch( ex ) {
+        } catch ( ex ) {
 
             if ( ex.code !== 404 ) throw ex;
+            return Promise.resolve();
 
         }
 
@@ -37,10 +37,8 @@ export default class Project {
 
         const segments = segmentsForProject.get( this );
 
-        if ( name in segments )
-        {
+        if ( name in segments ) {
 
-            console.log( "Removing", name );
             const removedSegments = removedSegmentsForProject.get( this );
             removedSegments.push( name );
             delete segments[ name ];
@@ -56,11 +54,8 @@ export default class Project {
 
             segments[ name ] = clone( maybeData );
 
-        } else {
-
-            return clone( segments[ name ] );
-
         }
+        return clone( segments[ name ] );
 
     }
 
@@ -78,7 +73,7 @@ export default class Project {
 
     async load() {
 
-        const repo = repos.get( this  );
+        const repo = repos.get( this );
         const { segments } = await repo.loadProject( this.name );
         segmentsForProject.set( this, clone( segments ) );
 

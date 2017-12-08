@@ -4,7 +4,7 @@
 import { userFunctions } from "../func/reflection";
 import { div, section, box } from "../func/html";
 import { ul, li, b, sub } from "../func/html";
-import { button, label, select } from "../func/html";
+import { button, label, select, input } from "../func/html";
 
 function selectProviderButton( service, provider ) {
 
@@ -28,10 +28,10 @@ function summarizeProvider( service ) {
 
 }
 
-function serviceMethods( service ) {
+function objectTest( op, data, obj ) {
 
-    if ( !service ) return undefined;
-    const selectTest = label( "Test: ", select( "test-service-method", { service: service.name }, Array.from( userFunctions( service ) ) ) );
+    if ( !obj ) return undefined;
+    const selectTest = label( "Try: ", select( op, data, Array.from( userFunctions( obj ) ) ) );
     const host = div.withClass( "test-area" );
     return div( selectTest, host );
 
@@ -44,7 +44,7 @@ function summarizeService( service ) {
 
         sub( `${service.name} provider` ),
         summarizeProvider( service ),
-        serviceMethods( service ),
+        objectTest( "test-service-method", { service: service.name }, service ),
         `Available: ${availableProviders( service )}`
 
     );
@@ -71,27 +71,35 @@ function opServiceProvider( services, data ) {
 
 }
 
-function opServiceMethod( services, data ) {
-
-    const service = opService( services, data );
-    const method = data.method ? service[ data.method ] : undefined;
-    return { service, method };
-
-}
-
-function testArea( service, method ) {
+function testArea( obj, method ) {
 
     if ( !method ) return "";
-    const f = service[ method ];
+    const f = obj[ method ];
     const arity = f.length;
-    const invokeData = { service: service.name, method };
+    const invokeData = { method };
+    const inputs = input.text( "param" ).repeat( arity );
     return div(
+        inputs || "(no parameters)",
         button( "invokeTestMethod", invokeData, "Invoke" ),
-        div.withClass( "messages" )
+        div.withClass( "messages" ),
+        div.withClass( "child-context" )
     );
 
 }
 
+function parseMaybeJSON( value ) {
+
+    try {
+
+        return JSON.parse( value );
+
+    } catch ( _ ) {
+
+        return value;
+
+    }
+
+}
 export default name => ( name ? name.replace( /-./g, x => x[ 1 ].toUpperCase() ) : name );
 
 export function summarizeServices( services ) {
@@ -116,30 +124,57 @@ export function deselectProvider( services, data ) {
 
 }
 
-export function testServiceMethod( services, data, e ) {
+function testMethod( obj, e ) {
 
-    const service = opService( services, data );
     const method = e.target.value;
-    const host = e.target.parentElement.parentElement.querySelector( ".test-area" );
+    const daddy = e.target.parentElement.parentElement;
+    const host = daddy.querySelector( ".test-area" );
     if ( !host ) return;
-    host.innerHTML = testArea( service, method );
+    host.innerHTML = testArea( obj, method );
+    host.object = obj;
 
 }
 
+export function testObjectMethod( services, data, e ) {
+
+    const grandad = e.target.parentElement.parentElement.parentElement;
+    return testMethod( grandad.object, e );
+
+}
+
+export function testServiceMethod( services, data, e ) {
+
+    const service = opService( services, data );
+    return testMethod( service, e );
+
+}
+
+const timestamp = x => `[${( new Date().toLocaleTimeString() )}] ${x}`;
+
 export async function invokeTestMethod( services, data, e ) {
 
-    const { service, method } = opServiceMethod( services, data );
+    const daddy = e.target.parentElement.parentElement;
+    const obj = daddy.object;
+    if ( !obj ) throw new Error( "No test object" );
+    const method = obj[ data.method ];
+    if ( !method ) throw new Error( `Method not found: ${data.method}` );
     const parameters = Array
-        .from( e.target.parentElement.querySelectorAll( "input[type=text]" ) )
-        .map( x => JSON.parse( x.value ) );
+        .from( daddy.querySelectorAll( "input[type=text]" ) )
+        .map( x => parseMaybeJSON( x.value ) );
     const messageHost = e.target.parentElement.querySelector( ".messages" );
-    const timestamp = x => `[${( new Date().toLocaleTimeString() )}] ${x}`;
+
     if ( messageHost ) messageHost.innerHTML = timestamp( "Running...<br />" );
+    const child = daddy.querySelector( ".child-context" );
+    child.innerHTML = "";
     try {
 
-        const result = await method.apply( service, parameters );
+        console.log( "Applying", parameters, "to", method, "on", obj );
+        const result = await method.apply( obj, parameters );
         console.log( result );
         if ( messageHost ) messageHost.innerHTML += timestamp( JSON.stringify( result ) );
+
+        child.innerHTML = objectTest( "test-object-method", {}, result );
+        child.object = result;
 
     } catch ( ex ) {
 

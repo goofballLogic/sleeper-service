@@ -20,3 +20,5 @@ export const button = ( op, data, content ) => `<button data-handler="${op}" ${d
 export const option = ( value, text ) => `<option value="${value}">${text || value}</option>`;
 export const options = opts => `<option></option>${opts.map( o => option( o ) )}`;
 export const select = ( op, data, opts ) => `<select data-handler="${op}" ${datafy( data )}>${options( opts )}</select>`;
+export const input = ( className, type ) => `<input type="${type}"" class="${className}" />`;
+input.text = className => input( className, "text" );

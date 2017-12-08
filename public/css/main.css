@@ -105,3 +105,21 @@ select {
     border: none;
     padding: 0 0.5em;
 }
+
+input {
+    background-color: black;
+    border: none;
+    color: lime;
+    border-bottom: solid 1px lime;
+    line-height: 2em;
+    padding: 0 0.5em;
+    text-align: center;
+}
+input + input {
+    margin-left: 1em;
+}
+
+.child-context {
+    border-left: solid 0.25em green;
+    padding-left: 1.25em;
+}

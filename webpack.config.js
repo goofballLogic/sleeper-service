@@ -9,7 +9,7 @@ const common = {
     plugins: [
         new UglifyJSPlugin( { sourceMap: true } )
     ],
-    devtool: "inline-source-map",
+    devtool: "source-map",
     module: {
         rules: [
             { test: /\.js$/, loader: "babel-loader" },

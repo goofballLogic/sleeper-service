@@ -7,7 +7,7 @@ export default class ProjectsService extends Service {
 
     constructor( providers ) {
 
-        super( providers, chosenKey, requiredFunctions );
+        super( providers, chosenKey, requiredFunctions, "Projects" );
 
     }
 

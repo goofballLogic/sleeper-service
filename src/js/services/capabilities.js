@@ -16,7 +16,7 @@ export default class CapabilitiesService extends Service {
 
     constructor( providers ) {
 
-        super( providers, chosenKey, requiredFunctions );
+        super( providers, chosenKey, requiredFunctions, "Capabilities testing" );
 
     }
 

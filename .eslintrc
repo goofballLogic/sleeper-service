@@ -35,3 +35,4 @@ rules:
     no-multi-assign: 0
     valid-jsdoc:
         - error
+    no-restricted-syntax: 0

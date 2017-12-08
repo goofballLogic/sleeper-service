@@ -271,7 +271,7 @@ class GoogleCapabilities extends Provider {
 
     constructor() {
 
-        super( "Your Google Drive storage" );
+        super( "Capabilities testing for Google Drive", "GoogleCapabilities" );
 
     }
 

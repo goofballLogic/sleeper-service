@@ -41,7 +41,7 @@ class GoogleIdentity extends Provider {
 
     constructor() {
 
-        super( "Your Google identity (e.g. gmail)" );
+        super( "Your Google identity (e.g. gmail)", "GoogleIdentity" );
 
     }
 

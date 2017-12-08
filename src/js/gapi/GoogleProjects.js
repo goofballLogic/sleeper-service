@@ -17,7 +17,7 @@ class GoogleProjects extends Provider {
 
     constructor() {
 
-        super( "Projects based on google drive" );
+        super( "Projects based on Google Drive", "GoogleProjects" );
         this.repo = this.waitForLoad().then( initializeRepo );
 
     }

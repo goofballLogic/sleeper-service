@@ -1,9 +1,107 @@
 .hidden {
     display: none;
 }
+
+html {
+    background-color: black;
+    color: rgba( 0, 255, 0, 0.8);
+    line-height: 20px;
+}
+
+body {
+    margin: 0;
+}
+
 * {
     transition: all 0.5s;
+    font-family: monospace;
+    box-sizing: border-box;
 }
+
+article,
+div.box {
+    padding: 10px 0.5em;
+    border: solid 1px green;
+    overflow: wrap;
+}
+
+div.big-box {
+    padding: 2em;
+}
+
+article>:last-child,
+div.box:last-child {
+    margin-bottom: 5px;
+
+}
+
+article>header {
+
+    font-weight: 900;
+    background-color: green;
+    margin: -10px -0.5em 10px -0.5em;
+    padding: 5px 5px;
+    color: rgba( 0, 255, 0, 1);
+
+}
+
 button:disabled {
     opacity: 0.1;
+}
+
+ul {
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    list-style-type: none;
+}
+
+li:before {
+    content: "-";
+    margin-right: 1em;
+}
+
+ul.inline {
+    display: inline-block;
+}
+
+ul.inline>li {
+    display: inline-block;
+}
+
+ul.inline>li:before {
+    content: "";
+    margin: 0;
+}
+
+ul.inline>li+li:before {
+    content: ", ";
+}
+
+section+section {
+    margin-top: 3em;
+}
+
+.bold {
+    font-weight: bold;
+    color: lime;
+}
+
+.sub-heading {
+    display: block;
+}
+
+.sub-heading:before {
+    content: "> ";
+}
+
+button,
+select {
+    background-color: green;
+    color: lime;
+    cursor: pointer;
+    border: none;
+    padding: 0 0.5em;
 }

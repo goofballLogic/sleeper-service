@@ -14,13 +14,14 @@ function findProvider( owner ) {
 
 export default class Service extends EventEmitter {
 
-    constructor( availableProviders, chosenKey, requiredFunctions ) {
+    constructor( availableProviders, chosenKey, requiredFunctions, name ) {
 
         super();
         availableProviders.forEach( p => p.verifyInterface( requiredFunctions ) );
         providers.set( this, availableProviders );
         chosenKeys.set( this, chosenKey );
         this.provider = findProvider( this );
+        this.name = name;
 
     }
 

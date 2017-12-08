@@ -3,7 +3,7 @@
 
 <head>
 
-    <script>
+    <script id="rollbar-stuff">
         var _rollbarConfig = {
             accessToken: "beb731232f044d28b62684432b1619a2",
             captureUncaught: true,
@@ -16,11 +16,9 @@
 
     <title>Hello</title>
     <link rel="stylesheet" type="text/css" href="/public/css/main.css" />
-    <script src="//cdnjs.cloudflare.com/ajax/libs/moment.js/2.19.1/moment.min.js"></script>
 
     <script src="/public/js/config.js"></script>
-    <script src="/public/js/polly.js"></script>
-    <script src="/public/js/app.js"></script>
+    <script src="/public/js/lib.js"></script>
 
     <script async defer src="//apis.google.com/js/api.js"
         onload="this.onload=function(){};document.dispatchEvent(new CustomEvent('google-api-loaded'));"
@@ -31,8 +29,12 @@
 
 <body>
     <main>
-
+        <article>
+            <header>Services</header>
+            <div data-op="summarize-services"></div>
+        </article>
     </main>
+    <script src="/public/js/main.js"></script>
 </body>
 
 </html>

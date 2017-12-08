@@ -40,9 +40,9 @@ function waitFor( condition, timeout, description ) {
 
 export default class Provider extends ProviderBase {
 
-    constructor( description ) {
+    constructor( description, name ) {
 
-        super( "gapi", description );
+        super( "gapi", description, name );
 
     }
 

@@ -2,10 +2,10 @@ import EventEmitter from "tiny-emitter";
 
 export default class Provider extends EventEmitter {
 
-    constructor( key, description ) {
+    constructor( key, description, name ) {
 
         super();
-        this.name = this.constructor.name;
+        this.name = name || this.constructor.name;
         this.key = key;
         this.description = description;
 

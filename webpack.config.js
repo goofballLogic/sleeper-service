@@ -1,25 +1,22 @@
 const path = require( "path" );
 const UglifyJSPlugin = require( "uglifyjs-webpack-plugin" );
 
-module.exports = [ {
-    entry: "./src/js/entry.js",
+const common = {
     output: {
         path: path.join( __dirname, "public/js" ),
-        filename: "app.js",
+        filename: "[name].js",
     },
+    plugins: [
+        new UglifyJSPlugin( { sourceMap: true } )
+    ],
     devtool: "inline-source-map",
     module: {
         rules: [
             { test: /\.js$/, loader: "babel-loader" },
         ],
     },
-}, {
-    entry: [ "babel-polyfill", "./src/js/polly.js" ],
-    output: {
-        path: path.join( __dirname, "public/js" ),
-        filename: "polly.js",
-    },
-    plugins: [
-        new UglifyJSPlugin()
-    ]
-} ];
+};
+module.exports = [
+    { lib: [ "./src/js/lib.js", "./src/js/polly.js" ] },
+    { main: "./src/js/console/main.js" }
+].map( entry => Object.assign( { entry }, common ) );

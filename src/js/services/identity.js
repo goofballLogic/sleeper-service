@@ -7,7 +7,7 @@ export default class IdentityService extends Service {
 
     constructor( providers ) {
 
-        super( providers, chosenKey, requiredFunctions );
+        super( providers, chosenKey, requiredFunctions, "Identity" );
 
     }
 

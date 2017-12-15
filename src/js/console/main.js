@@ -33,8 +33,8 @@ function invokeHandler( services, e ) {
 
 function invokeClickHandler( services, e ) {
 
-    if ( e.target.tagName === "SELECT" ) return;
-    if ( invokeHandler( services, e ) ) e.preventDefault();
+    if ( e && e.target && e.target.tagName === "SELECT" ) return;
+    if ( invokeHandler( services, e ) && e ) e.preventDefault();
 
 }
 

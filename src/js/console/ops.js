@@ -1,10 +1,13 @@
 /* global document, Event */
 /* eslint-disable import/no-duplicates */
 
+import React from "react";
+import ReactDOM from "react-dom";
 import { userFunctions } from "../func/reflection";
 import { div, section, box } from "../func/html";
 import { ul, li, b, sub } from "../func/html";
 import { button, label, select, input } from "../func/html";
+import ui from "../ui/ns";
 
 function selectProviderButton( service, provider ) {
 
@@ -30,10 +33,15 @@ function summarizeProvider( service ) {
 
 function objectTest( op, data, obj ) {
 
-    if ( !obj ) return undefined;
-    const selectTest = label( "Try: ", select( op, data, Array.from( userFunctions( obj ) ) ) );
-    const host = div.withClass( "test-area" );
-    return div( selectTest, host );
+    const funcs = ( typeof obj !== "undefined" && obj !== null ) ? Array.from( userFunctions( obj ) ) : [];
+    if ( funcs.length ) {
+
+        const selectTest = label( "Try: ", select( op, data, funcs ) );
+        const host = div.withClass( "test-area" );
+        return div( selectTest, host );
+
+    }
+    return div( "---" );
 
 }
 
@@ -100,7 +108,57 @@ function parseMaybeJSON( value ) {
     }
 
 }
+
+function testMethod( obj, e ) {
+
+    const method = e.target.value;
+    const daddy = e.target.parentElement.parentElement;
+    const host = daddy.querySelector( ".test-area" );
+    if ( !host ) return;
+    host.innerHTML = testArea( obj, method );
+    host.object = obj;
+
+}
+
+const timestamp = x => `[${( new Date().toLocaleTimeString() )}] ${x}`;
+
+function summarizeComponent( name ) {
+
+    return box.big(
+
+        sub( name ),
+        button( "instantiate-component", { name }, "Run" ),
+        div.withClass( "canvas" )
+
+    );
+
+}
+
+function formatMessage( outside = [], ...inside ) {
+
+    return outside.reduce( ( ret, outsider, i ) => `${ret}${inside[ i - 1 ]}${outsider}` );
+
+}
+
 export default name => ( name ? name.replace( /-./g, x => x[ 1 ].toUpperCase() ) : name );
+
+export function instantiateComponent( services, data, e ) {
+
+    const { name } = data;
+    const Component = ui.components[ name ];
+    const canvas = e.target.parentElement.querySelector( ".canvas" );
+    ReactDOM.unmountComponentAtNode( canvas );
+    canvas.innerHTML = `instantiating ${name}`;
+    const component = React.createElement( Component, { services, formatMessage } );
+    ReactDOM.render( component, canvas );
+
+}
+
+export function summarizeComponents() {
+
+    return Object.keys( ui.components ).map( key => summarizeComponent( key, ui.components[ key ] ) );
+
+}
 
 export function summarizeServices( services ) {
 
@@ -124,17 +182,6 @@ export function deselectProvider( services, data ) {
 
 }
 
-function testMethod( obj, e ) {
-
-    const method = e.target.value;
-    const daddy = e.target.parentElement.parentElement;
-    const host = daddy.querySelector( ".test-area" );
-    if ( !host ) return;
-    host.innerHTML = testArea( obj, method );
-    host.object = obj;
-
-}
-
 export function testObjectMethod( services, data, e ) {
 
     const grandad = e.target.parentElement.parentElement.parentElement;
@@ -148,8 +195,6 @@ export function testServiceMethod( services, data, e ) {
     return testMethod( service, e );
 
 }
-
-const timestamp = x => `[${( new Date().toLocaleTimeString() )}] ${x}`;
 
 export async function invokeTestMethod( services, data, e ) {
 

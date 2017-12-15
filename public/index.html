@@ -3,6 +3,7 @@
 
 <head>
 
+    <meta charset="utf-8"/>
     <script id="rollbar-stuff">
         var _rollbarConfig = {
             accessToken: "beb731232f044d28b62684432b1619a2",
@@ -17,8 +18,11 @@
     <title>Hello</title>
     <link rel="stylesheet" type="text/css" href="/public/css/main.css" />
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/16.2.0/umd/react.development.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/16.2.0/umd/react-dom.development.js"></script>
     <script src="/public/js/config.js"></script>
     <script src="/public/js/lib.js"></script>
+    <script src="/public/js/ui.js"></script>
 
     <script async defer src="//apis.google.com/js/api.js"
         onload="this.onload=function(){};document.dispatchEvent(new CustomEvent('google-api-loaded'));"
@@ -32,6 +36,10 @@
         <article>
             <header>Services</header>
             <div data-op="summarize-services"></div>
+        </article>
+        <article>
+            <header>UI Components</header>
+            <div data-op="summarize-components"></div>
         </article>
     </main>
     <script src="/public/js/main.js"></script>

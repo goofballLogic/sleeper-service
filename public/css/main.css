@@ -18,20 +18,44 @@ body {
     box-sizing: border-box;
 }
 
-article,
-div.box {
-    padding: 10px 0.5em;
-    border: solid 1px green;
-    overflow: wrap;
+main {
+
+    display: flex;
+    padding: 0.5em;
+}
+main > * {
+
+    flex: 1;
+    margin: 0.5em;
 }
 
-div.big-box {
-    padding: 2em;
+
+article,
+div.box {
+
+    padding: 1em 0.5em;
+    border: solid 1px green;
+
 }
 
 article>:last-child,
 div.box:last-child {
-    margin-bottom: 5px;
+
+    margin-bottom: 0.5em;
+
+}
+
+div.big-box {
+
+    padding-top: 2em;
+    padding-bottom: 2em;
+    border: none;
+
+}
+
+div.big-box + div.big-box {
+
+    border-top: solid 1px green;
 
 }
 
@@ -39,8 +63,8 @@ article>header {
 
     font-weight: 900;
     background-color: green;
-    margin: -10px -0.5em 10px -0.5em;
-    padding: 5px 5px;
+    margin: -1em -0.5em 1em -0.5em;
+    padding: 0.5em;
     color: rgba( 0, 255, 0, 1);
 
 }
@@ -115,7 +139,8 @@ input {
     padding: 0 0.5em;
     text-align: center;
 }
-input + input {
+
+input+input {
     margin-left: 1em;
 }
 
